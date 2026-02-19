@@ -1,0 +1,100 @@
+---
+description: Core Next.js 16+ and React 19 conventions for this Medium clone
+alwaysApply: true
+---
+
+# Next.js 16+ Core Conventions
+
+- **Use the App Router**
+  - Place routes under `app/` (e.g. `app/page.tsx`, `app/(auth)/login/page.tsx`, `app/(auth)/register/page.tsx`).
+  - Prefer **Server Components by default**; add `'use client'` only where hooks, browser APIs, or event handlers are required.
+
+- **Route & file naming**
+  - Use `page.tsx` for pages, `layout.tsx` for shared layout, `loading.tsx` for skeletons, and `error.tsx` for route-bound error states.
+  - Co-locate route-specific components and hooks inside the corresponding `app/...` segment when they are not reused globally.
+
+- **Metadata & SEO**
+  - Use the `Metadata` type from `next` and export `metadata` from page or layout files instead of calling `head` manually.
+  - Keep titles and descriptions aligned with the product language and PRD (Medium-like editorial app).
+
+## React 19 + Client Components
+
+- **Client-only features**
+  - Add `'use client'` at the top of components that:
+    - Use React hooks (`useState`, `useEffect`, `useRouter`, etc.),
+    - Interact with `window`, `document`, `localStorage`, or other browser-only APIs,
+    - Attach event handlers like `onClick`, `onSubmit`.
+  - Avoid `'use client'` on root layout and top-level route files unless absolutely necessary.
+
+- **Hydration & UX**
+  - Avoid hydration mismatches by:
+    - Guarding browser-only logic behind `useEffect` or a `mounted` flag in client components.
+    - Using `suppressHydrationWarning` on elements only when you have a clear, documented reason (e.g. extensions affecting markup).
+
+## Data Layer & Prisma
+
+- **Prisma client usage**
+  - Use a shared Prisma singleton (e.g. `lib/prisma.ts`) in server code and route handlers.
+  - Do **not** create new `PrismaClient()` instances ad hoc in components or handlers.
+
+- **Server-only Prisma usage**
+  - Use Prisma only in:
+    - Server Components,
+    - Route handlers (`app/api/**/route.ts`),
+    - Server actions.
+  - Never import Prisma into client components.
+
+- **Migrations & schema changes**
+  - When editing `prisma/schema.prisma`, keep models in sync with `schema.dbml`.
+  - After schema changes, always run, in order:
+    - `npx prisma generate`
+    - `npx prisma migrate dev --name <change-name>`
+    - `npx prisma db seed` (if seed data needs to be updated)
+
+## API & Server Actions
+
+- **Prefer Next.js route handlers or server actions**
+  - For operations like authentication, publishing articles, likes, and profile updates:
+    - Use `POST`/`PATCH` route handlers under `app/api/.../route.ts`, or
+    - Use typed server actions referenced from server or client components.
+  - Validate inputs on the server and return typed responses (e.g. using Zod or similar if added later).
+
+- **Error handling**
+  - In route handlers and server actions:
+    - Catch known errors and return appropriate HTTP status codes or structured error results.
+    - Log unexpected errors and avoid leaking internal details to clients.
+
+## Styling & Layout
+
+- **Tailwind CSS**
+  - Use Tailwind utility classes for layout and typography, following the editorial, minimal design described in the PRD/design.
+  - Keep layout constrained (e.g. `max-w-2xl`/`max-w-4xl`, centered content, generous white space).
+
+- **Shared layout**
+  - Use `app/layout.tsx` to define the global shell:
+    - Global fonts (via `next/font`),
+    - Global `<Header />` / navigation,
+    - Main content container.
+  - Reuse shared components like navbars, cards, and buttons rather than duplicating markup across pages.
+
+## Auth, Sessions, and Access Control
+
+- **Public vs protected routes**
+  - Keep Home and Article Detail routes publicly accessible.
+  - Gate Editor and profile-editing routes behind authentication using server-side checks (e.g. in server components, route handlers, or middleware).
+
+- **Ownership checks**
+  - When mutating article or profile data, ensure the current user owns the resource before applying changes.
+
+## General Project Practices
+
+- **TypeScript**
+  - Use strict typing for route params, props, and data returned from Prisma.
+  - Prefer explicit return types on exported functions/components where it improves clarity.
+
+- **File organization**
+  - Co-locate feature code:
+    - Article-related components and logic near the article routes,
+    - Auth UI under an `(auth)` route group,
+    - Shared primitives in a small `components/` library.
+
