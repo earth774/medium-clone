@@ -10,21 +10,21 @@
 
 ### ทำอะไร
 - สร้างโปรเจกต์ Next.js 14 ด้วย App Router
-- ติดตั้ง Prisma และเชื่อมต่อ SQLite
+- ติดตั้ง Prisma และเชื่อมต่อ PostgreSQL
 - ติดตั้ง Tailwind CSS
 - สร้าง Layout พื้นฐาน (Header, Navigation)
 
 ### อธิบาย
 - **Next.js 14 App Router** — โครงสร้างใหม่ใช้โฟลเดอร์ `app/` แทน `pages/` รองรับ Server Components, Layouts, และ API Routes
 - **Prisma** — ORM ที่ช่วยเขียน query แบบ type-safe และจัดการ migration
-- **SQLite** — ฐานข้อมูลไฟล์ ไม่ต้อง setup server รันได้ทันที เหมาะกับ development
+- **PostgreSQL** — ฐานข้อมูลที่ต้อง setup server รันได้ทันที เหมาะกับ development
 - **Layout** — ใช้ `app/layout.tsx` เป็น root layout แสดง Header/Nav ซ้ำทุกหน้า
 
 ### Backend
 1. `npx create-next-app@latest` เลือก App Router, Tailwind, TypeScript
 2. `npm install prisma @prisma/client`
 3. `npx prisma init`
-4. แก้ `DATABASE_URL` ใน `.env` เป็น `file:./dev.db` (SQLite — ไม่ต้อง setup อะไรเพิ่ม)
+4. แก้ `DATABASE_URL` ใน `.env` เป็น `postgresql://localhost:5432/medium` (PostgreSQL — ไม่ต้อง setup อะไรเพิ่ม)
 
 ### Frontend
 1. สร้าง `app/layout.tsx` — ใส่ `<html>`, `<body>`, font (เช่น Inter)
@@ -239,25 +239,37 @@ Table article_like {
 
 **`prisma/schema.prisma` (เฉพาะส่วน model)**  
 ```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model Status {
-  id      Int     @id
-  name    String
-  users   User[]
-  articles Article[]
-  likes   ArticleLike[]
+  id                Int               @id
+  name              String
+  users             User[]
+  articles          Article[]
+  likes             ArticleLike[]
+  categories        Category[]
+  articleCategories ArticleCategory[]
 
   @@map("status")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String        @id @default(cuid())
+  email     String        @unique
   password  String
   name      String
-  statusId  Int      @default(1) @map("status_id")
-  status    Status   @relation(fields: [statusId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  statusId  Int           @default(1) @map("status_id")
+  status    Status        @relation(fields: [statusId], references: [id])
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
   articles  Article[]
   likes     ArticleLike[]
 
@@ -265,40 +277,43 @@ model User {
 }
 
 model Category {
-  id        Int      @id
-  name      String
-  statusId  Int      @default(1) @map("status_id")
-  status    Status   @relation(fields: [statusId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-  articles  Article[]
+  id        Int           @id
+  name      String        @unique
+  statusId  Int           @default(1) @map("status_id")
+  status    Status        @relation(fields: [statusId], references: [id])
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+  articles  ArticleCategory[]
+
+  @@map("category")
 }
 
 model Article {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   title     String
   content   String
-  authorId  String   @map("user_id")
-  author    User     @relation(fields: [authorId], references: [id])
-  statusId  Int      @default(1) @map("status_id")
-  status    Status   @relation(fields: [statusId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  authorId  String        @map("user_id")
+  author    User          @relation(fields: [authorId], references: [id])
+  statusId  Int           @default(1) @map("status_id")
+  status    Status        @relation(fields: [statusId], references: [id])
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
   likes     ArticleLike[]
+  categories ArticleCategory[]
 
   @@map("article")
 }
 
 model ArticleCategory {
-  id        Int      @id
-  articleId String   @map("article_id")
-  article   Article  @relation(fields: [articleId], references: [id])
+  id         Int      @id
+  articleId  String   @map("article_id")
+  article    Article  @relation(fields: [articleId], references: [id])
   categoryId Int      @map("category_id")
-  category  Category @relation(fields: [categoryId], references: [id])
-  statusId  Int      @default(1) @map("status_id")
-  status    Status   @relation(fields: [statusId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  category   Category @relation(fields: [categoryId], references: [id])
+  statusId   Int      @default(1) @map("status_id")
+  status     Status   @relation(fields: [statusId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("article_category")
 }
@@ -321,9 +336,7 @@ model ArticleLike {
 
 **`prisma/seed.ts`**
 ```ts
-import { PrismaClient } from '../app/generated/prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 async function main() {
   await prisma.status.upsert({
@@ -343,6 +356,62 @@ async function main() {
     update: {},
     create: { id: 3, name: 'Deleted' },
   })
+
+  // Seed categories from design (Recommended topics)
+  const categories = [
+    { id: 1, name: 'Programming' },
+    { id: 2, name: 'Data Science' },
+    { id: 3, name: 'UX' },
+    { id: 4, name: 'Startup' },
+    { id: 5, name: 'Writing' },
+    { id: 6, name: 'Psychology' },
+  ]
+  for (const { id, name } of categories) {
+    await prisma.category.upsert({
+      where: { id },
+      update: { name },
+      create: { id, name, statusId: 1 },
+    })
+  }
+
+  // Seed demo user and articles for Feed (Step 1.3)
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@medium.local' },
+    update: {},
+    create: {
+      email: 'demo@medium.local',
+      password: 'Pass@word123',
+      name: 'Demo Author',
+      statusId: 1,
+    },
+  })
+
+  // Reset demo articles on re-seed
+  await prisma.article.deleteMany({ where: { authorId: demoUser.id } })
+
+  const articles = [
+    {
+      title: 'The Future of Human-Computer Interaction in 2025',
+      content:
+        '<p>As AI systems become more capable, the relationship between humans and computers is evolving in unexpected ways. This article explores the trends shaping our digital future.</p><p>From voice interfaces to ambient computing, we are moving toward a world where technology fades into the background.</p>',
+    },
+    {
+      title: 'The Last Programmer — A Short Story About AI',
+      content:
+        '<p>Artificial intelligence is no longer a distant dream. It is here, and it is changing how we work, create, and connect.</p>',
+    },
+    {
+      title: 'Building a Medium Clone with Next.js and Prisma',
+      content:
+        '<p>Learn how to build a blog platform similar to Medium using Next.js 16, Prisma, and Tailwind CSS. We will cover authentication, article CRUD, and a responsive feed layout.</p>',
+    },
+  ]
+
+  for (const { title, content } of articles) {
+    await prisma.article.create({
+      data: { title, content, authorId: demoUser.id, statusId: 1 },
+    })
+  }
 }
 
 main()
@@ -353,6 +422,8 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+
+
 ```
 
 **`lib/prisma.ts`**
@@ -372,5 +443,665 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 ```
 
 **โครงสร้าง DB (DBML)** — ดูรายละเอียดตารางและความสัมพันธ์ใน [schema.dbml](schema.dbml)
+
+---
+
+## Step 1.3 — Articles API + Feed
+
+### ทำอะไร
+- สร้าง API `GET /api/articles` สำหรับดึงรายการบทความแบบ pagination
+- สร้างหน้า Feed (Home) แสดงรายการบทความจาก DB
+- สร้างหน้ารายละเอียดบทความ `/articles/[id]`
+- สร้าง component `ArticleCard` และ `Sidebar`
+- สร้าง `loading.tsx` สำหรับ skeleton loading
+- เพิ่ม seed ข้อมูล demo user และบทความตัวอย่าง
+
+### อธิบาย
+- **GET /api/articles** — คืนรายการบทความที่ status = Active เรียงตามวันที่ใหม่สุด รองรับ `page` และ `limit` query params
+- **Feed** — หน้าแรกดึงบทความจาก API `GET /api/articles` ด้วย axios (Client Component) แสดง excerpt, ชื่อผู้เขียน, read time, like count
+- **Article detail** — หน้ารายละเอียดแสดง title, content (HTML), ผู้เขียน, วันที่
+- **excerptFromContent** — ตัด HTML tags ออกแล้วเอา plain text จำนวนจำกัดตัวอักษร
+- **estimateReadTime** — ประมาณเวลาอ่านจากจำนวนคำ (200 คำ/นาที)
+
+### Path หมายเหตุ
+โปรเจกต์ใช้ `web/` เป็น Next.js root ดังนั้น:
+- **จาก project root:** `web/app/...`, `web/prisma/...`
+- **จากโฟลเดอร์ web/:** `app/...`, `prisma/...`
+
+### ลำดับขั้นตอน (ตาม dependency)
+
+```mermaid
+flowchart TD
+    subgraph phase0 [Phase 0: Foundation]
+        A1[globals.css design vars]
+        A2[layout.tsx fonts + metadata]
+        A3[Header responsive]
+    end
+    subgraph phase1 [Phase 1: Backend]
+        B1[API route]
+        B2[Seed]
+    end
+    subgraph phase2 [Phase 2: Frontend]
+        C1[Install deps]
+        C2[ArticleCard]
+        C3[Sidebar]
+        C4[page.tsx Feed]
+        C5[articles/id page]
+        C6[loading.tsx]
+    end
+    subgraph phase3 [Phase 3: Commands]
+        D1[npm install]
+        D2[prisma db seed]
+    end
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2
+    B2 --> C1 --> C2 --> C3 --> C4 --> C5 --> C6
+    C6 --> D1 --> D2
+```
+
+---
+
+### Phase 0 — Foundation (Design System)
+
+ทำก่อนเพื่อให้ Feed และ components ใช้ design tokens ได้
+
+| ลำดับ | ขั้นตอน | รายละเอียด |
+|-------|---------|------------|
+| 1 | globals.css | เพิ่ม CSS variables: `--color-bg`, `--color-border`, `--color-primary`, `--color-text-1/2/3`, `--color-surface`, `--color-like`, `--font-serif`, `.font-logo` |
+| 2 | layout.tsx | ใส่ Source Serif 4 font, metadata (title, description), main container `max-w-[1024px]` |
+| 3 | Header.tsx | Mobile hamburger menu, responsive nav (desktop / mobile), `isLoggedIn` placeholder |
+
+---
+
+### Phase 1 — Backend
+
+| ลำดับ | ขั้นตอน | รายละเอียด |
+|-------|---------|------------|
+| 1 | สร้าง API route | สร้างไฟล์ `app/api/articles/route.ts` |
+| 2 | เขียน GET handler | รับ `page`, `limit` จาก query string (default: page=1, limit=10) |
+| 3 | Query Prisma | `prisma.article.findMany` โดย `where: { statusId: 1 }`, `include: { author, _count: { likes } }`, `orderBy: { createdAt: 'desc' }` |
+| 4 | คำนวณ pagination | ใช้ `skip`, `take` และ `prisma.article.count` สำหรับ total |
+| 5 | สร้าง helper functions | `excerptFromContent(content, 150)` — ตัด HTML, `estimateReadTime(content)` — ประมาณนาที |
+| 6 | Error handling | ห่อ logic ด้วย try/catch, return 500 + `{ error: "Failed to fetch articles" }` เมื่อ error |
+| 7 | Return JSON | `{ items, pagination: { page, limit, total, totalPages } }` — แต่ละ item มี id, title, excerpt, author, publishedAt, readTimeMinutes, likeCount |
+| 8 | อัปเดต seed | ใน `prisma/seed.ts` เพิ่ม demo user และบทความตัวอย่าง 3 รายการ (เนื้อหายาวพอสำหรับ excerpt/readTime) |
+
+---
+
+### Phase 2 — Frontend
+
+| ลำดับ | ขั้นตอน | รายละเอียด |
+|-------|---------|------------|
+| 1 | ติดตั้ง dependencies | `npm install axios lucide-react` — axios สำหรับเรียก API, lucide-react สำหรับ Heart, Bookmark icons |
+| 2 | สร้าง ArticleCard | Component แสดง title, excerpt, author (initials avatar), read time, like count, category chip, bookmark button |
+| 3 | สร้าง Sidebar | Popular Articles (placeholder), Recommended topics, Footer links, sticky layout บน desktop |
+| 4 | แก้ไข Home page | `app/page.tsx` — Client Component เรียก `axios.get('/api/articles')` ใน useEffect, แสดง loading/error state |
+| 5 | สร้าง article detail route | `app/articles/[id]/page.tsx` — Server Component ดึงบทความจาก Prisma, แสดง title + content |
+| 6 | สร้าง loading.tsx | Skeleton loading สำหรับ Feed (animate-pulse) |
+| 7 | จัด layout | Feed ซ้าย + Sidebar ขวา (flex, responsive) |
+
+---
+
+### Phase 3 — คำสั่งที่ต้องรัน
+
+| ลำดับ | คำสั่ง | ทำอะไร |
+|-------|--------|--------|
+| 1 | `cd web && npm install axios lucide-react` | ติดตั้ง dependencies |
+| 2 | `npx prisma db seed` | รัน seed ใหม่เพื่อใส่ demo user และบทความ (หลังแก้ seed.ts) — รันจากโฟลเดอร์ `web/` |
+
+---
+
+### Code
+
+**`app/globals.css`** — Design variables (Phase 0)
+```css
+/* เพิ่มใน :root */
+--color-bg: #ffffff;
+--color-border: #e6e6e6;
+--color-primary: #1a8917;
+--color-text-1: #242424;
+--color-text-2: #6b6b6b;
+--color-text-3: #b3b3b3;
+--color-surface: #f9f9f9;
+--color-like: #e91e63;
+
+/* เพิ่มใน @theme inline */
+--font-serif: var(--font-source-serif);
+
+/* body */
+body {
+  background: var(--color-bg);
+  color: var(--color-text-1);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.font-logo {
+  font-family: var(--font-source-serif), Georgia, serif;
+}
+```
+
+**`app/layout.tsx`** — Fonts + metadata (Phase 0)
+```tsx
+import { Inter, Source_Serif_4 } from "next/font/google";
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
+export const metadata: Metadata = {
+  title: "Medium – Where good ideas find you",
+  description: "Medium is a place to read, write, and connect with ideas that matter.",
+};
+
+// html: className={`${inter.variable} ${sourceSerif.variable}`}
+// body: className="... bg-bg text-text-1"
+// main: className="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-11 py-8"
+```
+
+**`app/components/Header.tsx`** — Responsive nav (Phase 0)
+```tsx
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+export default function Header() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isLoggedIn = false; // TODO: wire to auth
+
+  return (
+    <header className="relative h-[57px] flex items-center justify-between px-4 sm:px-6 lg:px-11 border-b border-border bg-bg">
+      <Link href="/" className="font-logo text-2xl font-bold text-text-1 hover:text-primary transition-colors">
+        Medium
+      </Link>
+      {/* Desktop nav: hidden md:flex */}
+      {/* Mobile: hamburger button + dropdown menu */}
+      {/* ... Login/Register หรือ Write/Profile ตาม isLoggedIn */}
+    </header>
+  );
+}
+```
+
+**`app/api/articles/route.ts`** — GET articles with pagination
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+function excerptFromContent(content: string, maxLength = 150): string {
+  const plain = content.replace(/<[^>]+>/g, "").trim();
+  if (plain.length <= maxLength) return plain;
+  return plain.slice(0, maxLength).trim() + "…";
+}
+
+function estimateReadTime(content: string): number {
+  const words = content.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+    const limit = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10))
+    );
+    const skip = (page - 1) * limit;
+
+    const [articles, total] = await Promise.all([
+      prisma.article.findMany({
+        where: { statusId: 1 },
+        include: {
+          author: { select: { id: true, name: true } },
+          _count: { select: { likes: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.article.count({ where: { statusId: 1 } }),
+    ]);
+
+    const items = articles.map((a) => ({
+      id: a.id,
+      title: a.title,
+      excerpt: excerptFromContent(a.content),
+      author: { id: a.author.id, name: a.author.name },
+      publishedAt: a.createdAt,
+      readTimeMinutes: estimateReadTime(a.content),
+      likeCount: a._count?.likes ?? 0,
+    }));
+
+    return NextResponse.json({
+      items,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    console.error("GET /api/articles error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch articles" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+**`app/page.tsx`** — Feed (Home) — เรียก API ด้วย axios
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import axios from "axios";
+import ArticleCard from "./components/ArticleCard";
+import Sidebar from "./components/Sidebar";
+
+const PAGE_SIZE = 10;
+
+type ArticleItem = {
+  id: string;
+  title: string;
+  excerpt: string;
+  author: { id: string; name: string };
+  publishedAt: string;
+  readTimeMinutes: number;
+  likeCount?: number;
+};
+
+type ApiResponse = {
+  items: ArticleItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export default function HomePage() {
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
+  const [pagination, setPagination] = useState<ApiResponse["pagination"] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchArticles() {
+      try {
+        setLoading(true);
+        setError(null);
+        const { data } = await axios.get<ApiResponse>("/api/articles", {
+          params: { page: 1, limit: PAGE_SIZE },
+        });
+        setArticles(data.items);
+        setPagination(data.pagination);
+      } catch (err) {
+        setError("Failed to load articles");
+        console.error("Fetch articles error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchArticles();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <div className="flex-1 min-w-0 lg:max-w-[728px]">
+          <div className="py-12 text-center text-text-2">Loading...</div>
+        </div>
+        <Sidebar />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <div className="flex-1 min-w-0 lg:max-w-[728px]">
+          <div className="py-12 text-center text-text-2">{error}</div>
+        </div>
+        <Sidebar />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+      {/* Left: Article Feed */}
+      <div className="flex-1 min-w-0 lg:max-w-[728px]">
+        <div className="flex flex-col gap-4">
+          {articles.length === 0 ? (
+            <div className="py-12 text-center text-text-2">
+              <p>No articles yet. Check back soon!</p>
+            </div>
+          ) : (
+            articles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                id={article.id}
+                title={article.title}
+                excerpt={article.excerpt}
+                authorName={article.author.name}
+                publishedAt={new Date(article.publishedAt)}
+                readTimeMinutes={article.readTimeMinutes}
+                likeCount={article.likeCount ?? 0}
+                isLoggedIn={false}
+              />
+            ))
+          )}
+        </div>
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <nav className="flex justify-center gap-2 mt-8 pt-8 border-t border-border" aria-label="Pagination">
+            <span className="text-sm text-text-3">Page {pagination.page} of {pagination.totalPages}</span>
+          </nav>
+        )}
+      </div>
+      {/* Right: Sidebar */}
+      <Sidebar />
+    </div>
+  );
+}
+```
+
+**`app/articles/[id]/page.tsx`** — Article detail
+```tsx
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+type Props = { params: Promise<{ id: string }> };
+
+export default async function ArticlePage({ params }: Props) {
+  const { id } = await params;
+  const article = await prisma.article.findUnique({
+    where: { id, statusId: 1 },
+    include: { author: { select: { id: true, name: true } } },
+  });
+
+  if (!article) notFound();
+
+  return (
+    <article className="max-w-[680px] mx-auto py-8">
+      <h1 className="text-3xl font-bold text-text-1 mb-4">{article.title}</h1>
+      <div className="flex items-center gap-2 text-sm text-text-2 mb-8">
+        <Link href={`/profile/${article.author.id}`} className="hover:text-primary transition-colors">
+          {article.author.name}
+        </Link>
+        <span>·</span>
+        <time dateTime={article.createdAt.toISOString()}>
+          {new Intl.DateTimeFormat("th-TH", { month: "long", day: "numeric", year: "numeric" }).format(article.createdAt)}
+        </time>
+      </div>
+      <div className="prose prose-neutral max-w-none text-text-1" dangerouslySetInnerHTML={{ __html: article.content }} />
+    </article>
+  );
+}
+```
+
+**`prisma/seed.ts`** — เพิ่ม demo user และ articles (ต่อจากส่วน status)
+```ts
+  // Seed demo user and articles for Feed (Step 1.3)
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@medium.local' },
+    update: {},
+    create: {
+      email: 'demo@medium.local',
+      password: 'demo-hash-placeholder',
+      name: 'Demo Author',
+      statusId: 1,
+    },
+  })
+
+  // Reset demo articles on re-seed
+  await prisma.article.deleteMany({ where: { authorId: demoUser.id } })
+
+  const articles = [
+    {
+      title: 'The Future of Human-Computer Interaction in 2025',
+      content:
+        '<p>As AI systems become more capable, the relationship between humans and computers is evolving in unexpected ways. This article explores the trends shaping our digital future.</p><p>From voice interfaces to ambient computing, we are moving toward a world where technology fades into the background.</p>',
+    },
+    {
+      title: 'The Last Programmer — A Short Story About AI',
+      content:
+        '<p>Artificial intelligence is no longer a distant dream. It is here, and it is changing how we work, create, and connect.</p>',
+    },
+    {
+      title: 'Building a Medium Clone with Next.js and Prisma',
+      content:
+        '<p>Learn how to build a blog platform similar to Medium using Next.js 16, Prisma, and Tailwind CSS. We will cover authentication, article CRUD, and a responsive feed layout.</p>',
+    },
+  ]
+
+  for (const { title, content } of articles) {
+    await prisma.article.create({
+      data: { title, content, authorId: demoUser.id, statusId: 1 },
+    })
+  }
+```
+
+---
+
+**`app/components/ArticleCard.tsx`** — Article card component
+```tsx
+import Link from "next/link";
+import { Heart, Bookmark } from "lucide-react";
+
+type ArticleCardProps = {
+  id: string;
+  title: string;
+  excerpt: string;
+  authorName: string;
+  publishedAt: Date;
+  readTimeMinutes?: number;
+  categoryName?: string;
+  likeCount?: number;
+  isLoggedIn?: boolean;
+};
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+export default function ArticleCard({
+  id,
+  title,
+  excerpt,
+  authorName,
+  publishedAt,
+  readTimeMinutes = 5,
+  categoryName,
+  likeCount = 0,
+  isLoggedIn = false,
+}: ArticleCardProps) {
+  return (
+    <article className="border border-border rounded-lg py-6 px-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-primary shrink-0 flex items-center justify-center text-white text-[10px] font-medium" aria-hidden>
+            {getInitials(authorName)}
+          </span>
+          <span className="text-[13px] font-medium text-text-1">{authorName}</span>
+        </div>
+        <Link href={`/articles/${id}`} className="block group">
+          <h2 className="text-xl font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">
+            {title}
+          </h2>
+        </Link>
+        <p className="text-sm text-text-2 line-clamp-2">{excerpt}</p>
+        <div className="flex items-center gap-3 text-[13px] text-text-2">
+          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-text-1">
+            {categoryName ?? "Technology"}
+          </span>
+          <span>{readTimeMinutes} min read</span>
+          <span className={`flex items-center gap-1 ${likeCount > 0 ? "text-like" : ""}`}>
+            <Heart className="w-3.5 h-3.5" strokeWidth={2} fill={likeCount > 0 ? "currentColor" : "none"} />
+            {likeCount}
+          </span>
+          <button
+            type="button"
+            disabled={!isLoggedIn}
+            className={`ml-auto p-0.5 ${!isLoggedIn ? "cursor-not-allowed opacity-50" : "hover:opacity-80"}`}
+            aria-label={isLoggedIn ? "Bookmark" : "Login to bookmark"}
+          >
+            <Bookmark className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+```
+
+**`app/components/Sidebar.tsx`** — Sidebar component
+```tsx
+import Link from "next/link";
+
+const POPULAR_ARTICLES = [
+  { title: "The Last Programmer — A Short Story About AI", author: "Yuki Tanaka", href: "#" },
+  { title: "How I Went From Burnout to Building a Profitable Solo Business", author: "Alex Chen", href: "#" },
+  { title: "Climate Tech Is Having Its Moment — Here's What to Watch", author: "Maria Santos", href: "#" },
+];
+
+const TOPICS = ["Technology", "Design", "Culture", "Business", "Politics", "Science", "Health", "Writing", "Art", "Music"];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+const FOOTER_LINKS = [
+  { label: "Help", href: "#" },
+  { label: "About", href: "#" },
+  { label: "Privacy", href: "#" },
+  { label: "Terms", href: "#" },
+];
+
+export default function Sidebar() {
+  return (
+    <aside className="w-full lg:w-[296px] shrink-0">
+      <div className="lg:sticky lg:top-24 space-y-8">
+        <section>
+          <h3 className="text-[13px] font-bold text-text-1 mb-4">Popular Articles</h3>
+          <ul className="flex flex-col gap-4">
+            {POPULAR_ARTICLES.map((item, i) => (
+              <li key={i}>
+                <Link href={item.href} className="block group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-5 h-5 rounded-full bg-primary shrink-0 flex items-center justify-center text-white text-[10px] font-medium" aria-hidden>
+                      {getInitials(item.author)}
+                    </span>
+                    <span className="text-xs font-medium text-text-1">{item.author}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">
+                    {item.title}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <div className="h-px bg-border" />
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-3 mb-4">Recommended topics</h3>
+          <div className="flex flex-wrap gap-2">
+            {TOPICS.map((topic) => (
+              <Link
+                key={topic}
+                href={`/topics/${topic.toLowerCase()}`}
+                className="rounded-full bg-surface px-4 py-2 text-sm text-text-2 hover:bg-border hover:text-text-1 transition-colors"
+              >
+                {topic}
+              </Link>
+            ))}
+          </div>
+        </section>
+        <div className="h-px bg-border" />
+        <footer className="flex flex-wrap gap-2 text-sm text-text-3">
+          {FOOTER_LINKS.map((link, i) => (
+            <span key={link.label} className="flex items-center gap-2">
+              <Link href={link.href} className="hover:text-text-2 transition-colors">{link.label}</Link>
+              {i < FOOTER_LINKS.length - 1 && <span>·</span>}
+            </span>
+          ))}
+        </footer>
+      </div>
+    </aside>
+  );
+}
+```
+
+**`app/loading.tsx`** — Skeleton loading สำหรับ Feed
+```tsx
+export default function Loading() {
+  return (
+    <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 animate-pulse">
+      <div className="flex-1 min-w-0 lg:max-w-[728px] space-y-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex gap-4 py-6 border-b border-border">
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-24 bg-surface rounded" />
+              <div className="h-6 w-3/4 bg-surface rounded" />
+              <div className="h-4 w-full bg-surface rounded" />
+              <div className="h-3 w-32 bg-surface rounded" />
+            </div>
+            <div className="shrink-0 w-28 h-28 rounded-lg bg-surface" />
+          </div>
+        ))}
+      </div>
+      <div className="w-full lg:w-[296px] shrink-0 space-y-4">
+        <div className="h-4 w-24 bg-surface rounded" />
+        <div className="space-y-2">
+          <div className="h-4 w-full bg-surface rounded" />
+          <div className="h-4 w-4/5 bg-surface rounded" />
+          <div className="h-4 w-3/4 bg-surface rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### Optional: Prisma getDatabaseUrl (Monorepo)
+
+ถ้าโปรเจกต์เป็น monorepo และรัน seed จาก root อาจต้องแก้ `lib/prisma.ts` ให้ resolve path ของ `dev.db` ได้ถูกต้อง:
+
+```ts
+import { PrismaClient } from '../app/generated/prisma/client'
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
+
+function getDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL
+
+  // PostgreSQL: use URL as-is
+  if (url?.startsWith('postgresql://') || url?.startsWith('postgres://')) {
+    return url
+  }
+
+  return url
+}
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    datasources: { db: { url: getDatabaseUrl() } },
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
+}
+```
 
 ---
