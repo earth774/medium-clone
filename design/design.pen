@@ -2864,8 +2864,8 @@
     {
       "type": "frame",
       "id": "2IZLa",
-      "x": 62,
-      "y": 28330,
+      "x": 53,
+      "y": 28116,
       "name": "Page 2 — Article Detail",
       "width": 1280,
       "fill": "$color-bg",
@@ -3435,6 +3435,7 @@
                       "id": "DEuTU",
                       "name": "commentInput",
                       "width": "fill_container",
+                      "height": 106,
                       "fill": "$color-surface",
                       "cornerRadius": 8,
                       "stroke": {
@@ -3442,9 +3443,10 @@
                         "fill": "$color-border"
                       },
                       "layout": "vertical",
+                      "gap": 8,
                       "padding": [
-                        16,
-                        20
+                        12,
+                        16
                       ],
                       "children": [
                         {
@@ -3461,6 +3463,41 @@
                     },
                     {
                       "type": "frame",
+                      "id": "tLBNq",
+                      "name": "commentButtonRow",
+                      "width": "fill_container",
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "9NIDG",
+                          "name": "commentButton",
+                          "height": 40,
+                          "fill": "$color-primary",
+                          "cornerRadius": 8,
+                          "padding": [
+                            10,
+                            20
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Bmj2b",
+                              "name": "commentBtnText",
+                              "fill": "#FFFFFF",
+                              "content": "Comment",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
                       "id": "mI6T6",
                       "name": "commentItem1",
                       "width": "fill_container",
@@ -3471,9 +3508,7 @@
                       },
                       "gap": 16,
                       "padding": [
-                        0,
-                        0,
-                        20,
+                        16,
                         0
                       ],
                       "children": [
@@ -3550,7 +3585,16 @@
                       "id": "Eaf7f",
                       "name": "commentItem2",
                       "width": "fill_container",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$color-border"
+                      },
                       "gap": 16,
+                      "padding": [
+                        16,
+                        0
+                      ],
                       "children": [
                         {
                           "type": "frame",
@@ -5636,7 +5680,7 @@
                       "fill": "$color-text-2",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "→ ❤️ Like  →  Toggle, count updates\n→ 🔖 Bookmark  →  Toggle fill\n→ Follow  →  Toggle button state\n→ ↗ Share  →  Copy link toast",
+                      "content": "→ ❤️ Like  →  Toggle, count updates\n→ 🔖 Bookmark  →  Toggle fill\n→ Follow  →  Toggle button state\n→ ↗ Share  →  Copy link toast\n→ 💬 Write comment  →  Post (requires auth)\n→ View comments  →  Scroll to comments section",
                       "lineHeight": 1.8,
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -5688,7 +5732,7 @@
                       "id": "mnfAd",
                       "name": "nfBox6Title",
                       "fill": "$color-text-1",
-                      "content": "PROFILE  /@[username]",
+                      "content": "PROFILE  /@[user_id]",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "700"

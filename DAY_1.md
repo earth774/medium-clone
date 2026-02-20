@@ -555,20 +555,38 @@ flowchart TD
 
 **`app/globals.css`** — Design variables (Phase 0)
 ```css
-/* เพิ่มใน :root */
---color-bg: #ffffff;
---color-border: #e6e6e6;
---color-primary: #1a8917;
---color-text-1: #242424;
---color-text-2: #6b6b6b;
---color-text-3: #b3b3b3;
---color-surface: #f9f9f9;
---color-like: #e91e63;
+@import "tailwindcss";
 
-/* เพิ่มใน @theme inline */
---font-serif: var(--font-source-serif);
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* Medium clone design variables */
+  --color-bg: #ffffff;
+  --color-border: #e6e6e6;
+  --color-primary: #1a8917;
+  --color-text-1: #242424;
+  --color-text-2: #6b6b6b;
+  --color-text-3: #b3b3b3;
+  --color-surface: #f9f9f9;
+  --color-like: #e91e63;
+}
 
-/* body */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-bg: var(--color-bg);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-text-1: var(--color-text-1);
+  --color-text-2: var(--color-text-2);
+  --color-text-3: var(--color-text-3);
+  --color-surface: var(--color-surface);
+  --color-like: var(--color-like);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-source-serif);
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text-1);
@@ -582,7 +600,15 @@ body {
 
 **`app/layout.tsx`** — Fonts + metadata (Phase 0)
 ```tsx
+import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
+import "./globals.css";
+import Header from "./components/Header";
+
+const inter = Inter({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 const sourceSerif = Source_Serif_4({
   variable: "--font-source-serif",
@@ -595,9 +621,18 @@ export const metadata: Metadata = {
   description: "Medium is a place to read, write, and connect with ideas that matter.",
 };
 
-// html: className={`${inter.variable} ${sourceSerif.variable}`}
-// body: className="... bg-bg text-text-1"
-// main: className="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-11 py-8"
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="th" className={`${inter.variable} ${sourceSerif.variable}`} suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen antialiased bg-bg text-text-1`} suppressHydrationWarning>
+        <Header />
+        <main className="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-11 py-8">{children}</main>
+      </body>
+    </html>
+  );
+}
 ```
 
 **`app/components/Header.tsx`** — Responsive nav (Phase 0)
@@ -616,9 +651,37 @@ export default function Header() {
       <Link href="/" className="font-logo text-2xl font-bold text-text-1 hover:text-primary transition-colors">
         Medium
       </Link>
-      {/* Desktop nav: hidden md:flex */}
-      {/* Mobile: hamburger button + dropdown menu */}
-      {/* ... Login/Register หรือ Write/Profile ตาม isLoggedIn */}
+      <nav className="hidden md:flex items-center gap-4">
+        {isLoggedIn ? (
+          <>
+            <Link href="/write" className="text-text-2 hover:text-text-1 text-sm">Write</Link>
+            <Link href="/profile" className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm" aria-label="Profile">A</Link>
+          </>
+        ) : (
+          <>
+            <Link href="/login" className="text-text-2 hover:text-text-1 text-sm">Login</Link>
+            <Link href="/register" className="text-text-2 hover:text-text-1 text-sm">Register</Link>
+          </>
+        )}
+      </nav>
+      <div className="flex md:hidden items-center gap-2">
+        <button type="button" onClick={() => setMobileMenuOpen((o) => !o)} className="p-2 -mr-2 text-text-1" aria-label="Toggle menu" aria-expanded={mobileMenuOpen}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {mobileMenuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+          </svg>
+        </button>
+      </div>
+      {mobileMenuOpen && (
+        <div className="absolute top-[57px] left-0 right-0 bg-bg border-b border-border shadow-md md:hidden z-10" role="dialog" aria-label="Mobile menu">
+          <nav className="flex flex-col p-4 gap-2">
+            {isLoggedIn ? (
+              <><Link href="/write" className="py-2 text-text-1" onClick={() => setMobileMenuOpen(false)}>Write</Link><Link href="/profile" className="py-2 text-text-1" onClick={() => setMobileMenuOpen(false)}>Profile</Link></>
+            ) : (
+              <><Link href="/login" className="py-2 text-text-1" onClick={() => setMobileMenuOpen(false)}>Login</Link><Link href="/register" className="py-2 text-text-1" onClick={() => setMobileMenuOpen(false)}>Register</Link></>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
@@ -647,19 +710,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-    const limit = Math.min(
-      MAX_PAGE_SIZE,
-      Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10))
-    );
+    const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10)));
     const skip = (page - 1) * limit;
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where: { statusId: 1 },
-        include: {
-          author: { select: { id: true, name: true } },
-          _count: { select: { likes: true } },
-        },
+        include: { author: { select: { id: true, name: true } }, _count: { select: { likes: true } } },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
@@ -683,10 +740,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("GET /api/articles error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch articles" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch articles" }, { status: 500 });
   }
 }
 ```
@@ -728,9 +782,7 @@ export default function HomePage() {
       try {
         setLoading(true);
         setError(null);
-        const { data } = await axios.get<ApiResponse>("/api/articles", {
-          params: { page: 1, limit: PAGE_SIZE },
-        });
+        const { data } = await axios.get<ApiResponse>("/api/articles", { params: { page: 1, limit: PAGE_SIZE } });
         setArticles(data.items);
         setPagination(data.pagination);
       } catch (err) {
@@ -767,13 +819,10 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-      {/* Left: Article Feed */}
       <div className="flex-1 min-w-0 lg:max-w-[728px]">
         <div className="flex flex-col gap-4">
           {articles.length === 0 ? (
-            <div className="py-12 text-center text-text-2">
-              <p>No articles yet. Check back soon!</p>
-            </div>
+            <div className="py-12 text-center text-text-2"><p>No articles yet. Check back soon!</p></div>
           ) : (
             articles.map((article) => (
               <ArticleCard
@@ -790,58 +839,296 @@ export default function HomePage() {
             ))
           )}
         </div>
-        {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
           <nav className="flex justify-center gap-2 mt-8 pt-8 border-t border-border" aria-label="Pagination">
             <span className="text-sm text-text-3">Page {pagination.page} of {pagination.totalPages}</span>
           </nav>
         )}
       </div>
-      {/* Right: Sidebar */}
       <Sidebar />
     </div>
   );
 }
 ```
 
-**`app/articles/[id]/page.tsx`** — Article detail
+**`app/articles/[id]/CommentSection.tsx`** — Comment section (Client Component)
+```tsx
+"use client";
+
+import { useState } from "react";
+
+type Comment = {
+  id: string;
+  authorName: string;
+  timeAgo: string;
+  content: string;
+};
+
+const INITIAL_COMMENTS: Comment[] = [
+  {
+    id: "1",
+    authorName: "John Doe",
+    timeAgo: "2 hours ago",
+    content:
+      "Great article! The point about co-creating systems is particularly insightful.",
+  },
+  {
+    id: "2",
+    authorName: "Alex Kim",
+    timeAgo: "5 hours ago",
+    content:
+      "Totally agree. The Alan Kay quote really captures the essence of invisible design.",
+  },
+];
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function CommentSection() {
+  const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS);
+  const [text, setText] = useState("");
+
+  function handleRespond() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    setComments((prev) => [
+      ...prev,
+      {
+        id: `comment-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        authorName: "You",
+        timeAgo: "Just now",
+        content: trimmed,
+      },
+    ]);
+    setText("");
+  }
+
+  return (
+    <section className="pt-8 flex flex-col gap-6">
+      <div className="h-px bg-border" />
+      <h2 className="font-logo text-2xl font-bold text-text-1">Comments</h2>
+
+      {/* Input area */}
+      <div className="flex flex-col gap-2">
+        <textarea
+          placeholder="Write a comment..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full rounded-lg bg-surface border border-border p-4 min-h-[106px] text-[15px] text-text-1 placeholder:text-text-3 resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          rows={3}
+        />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleRespond}
+            disabled={!text.trim()}
+            className="rounded-lg bg-primary px-5 py-2.5 font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Respond
+          </button>
+        </div>
+      </div>
+
+      {/* Comment list */}
+      <div className="flex flex-col divide-y divide-border">
+        {comments.map((c) => (
+          <div key={c.id} className="flex gap-4 py-4">
+            <div
+              className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                c.authorName === "You" || c.id === "1" ? "bg-primary" : "bg-text-2"
+              }`}
+            >
+              {getInitials(c.authorName)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm text-text-1">{c.authorName}</div>
+              <div className="text-xs text-text-3">{c.timeAgo}</div>
+              <p className="text-[15px] leading-normal text-text-1 mt-1">{c.content}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+```
+
+**`app/articles/[id]/page.tsx`** — Article detail (Server Component)
 ```tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Heart, Share2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { CommentSection } from "./CommentSection";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function getReadTime(content: string): number {
+  const text = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+  const words = text.trim().split(" ").filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params;
   const article = await prisma.article.findUnique({
     where: { id, statusId: 1 },
-    include: { author: { select: { id: true, name: true } } },
+    include: {
+      author: { select: { id: true, name: true } },
+      categories: {
+        where: { statusId: 1 },
+        include: { category: { select: { id: true, name: true } } },
+      },
+      _count: { select: { likes: true } },
+    },
   });
 
   if (!article) notFound();
 
+  const readTime = getReadTime(article.content);
+  const initials = getInitials(article.author.name);
+  const plainContent = article.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const excerpt = plainContent.slice(0, 200);
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(article.createdAt);
+
   return (
-    <article className="max-w-[680px] mx-auto py-8">
-      <h1 className="text-3xl font-bold text-text-1 mb-4">{article.title}</h1>
-      <div className="flex items-center gap-2 text-sm text-text-2 mb-8">
-        <Link href={`/profile/${article.author.id}`} className="hover:text-primary transition-colors">
-          {article.author.name}
+    <article className="max-w-[680px] mx-auto pt-12 pb-12 flex flex-col gap-6">
+      {/* Title */}
+      <h1 className="font-logo text-[42px] font-bold leading-[1.2] text-text-1">
+        {article.title}
+      </h1>
+
+      {/* Subtitle - excerpt from content */}
+      {excerpt && (
+        <p className="font-logo text-2xl font-semibold leading-[1.4] text-text-2">
+          {excerpt}{plainContent.length > 200 ? "…" : ""}
+        </p>
+      )}
+
+      {/* Category chips */}
+      {article.categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {article.categories.map((ac) => (
+            <span
+              key={ac.category.id}
+              className="inline-flex items-center px-3.5 py-1.5 rounded-full text-[13px] font-medium text-text-1 bg-surface border border-border"
+            >
+              {ac.category.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Author bar */}
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/profile/${article.author.id}`}
+          className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[15px] shrink-0"
+        >
+          {initials}
         </Link>
-        <span>·</span>
-        <time dateTime={article.createdAt.toISOString()}>
-          {new Intl.DateTimeFormat("th-TH", { month: "long", day: "numeric", year: "numeric" }).format(article.createdAt)}
-        </time>
+        <div className="flex-1 min-w-0">
+          <Link
+            href={`/profile/${article.author.id}`}
+            className="text-base font-semibold text-text-1 hover:text-primary transition-colors block"
+          >
+            {article.author.name}
+          </Link>
+          <p className="text-[13px] text-text-2">
+            {dateStr} · {readTime} min read
+          </p>
+        </div>
+        <button
+          type="button"
+          className="px-4 py-2 rounded-full border border-primary text-primary text-sm font-medium hover:bg-primary/5 transition-colors"
+        >
+          Follow
+        </button>
       </div>
-      <div className="prose prose-neutral max-w-none text-text-1" dangerouslySetInnerHTML={{ __html: article.content }} />
+
+      {/* Action bar */}
+      <div className="flex items-center gap-5 py-3 border-y border-border">
+        <span className={`flex items-center gap-1.5 text-[15px] ${article._count.likes > 0 ? "text-like" : "text-text-2"}`}>
+          <Heart
+            className="size-[15px]"
+            strokeWidth={2}
+            fill={article._count.likes > 0 ? "currentColor" : "none"}
+          />
+          {article._count.likes}
+        </span>
+        <div className="flex-1" />
+        <span className="flex items-center gap-1.5 text-sm text-text-2">
+          <Share2 className="size-[14px]" strokeWidth={2} />
+          Share
+        </span>
+      </div>
+
+      {/* Body content */}
+      <div
+        className="prose prose-neutral max-w-none text-text-1 text-lg leading-[1.8] [&_blockquote]:border-l-4 [&_blockquote]:border-text-1 [&_blockquote]:pl-4 [&_blockquote]:font-logo [&_blockquote]:text-xl [&_blockquote]:font-semibold [&_blockquote]:leading-normal [&_blockquote]:not-italic"
+        dangerouslySetInnerHTML={{ __html: article.content }}
+      />
+
+      {/* Divider */}
+      <div className="h-px bg-border" />
+
+      {/* Bottom author card */}
+      <div className="flex gap-6 pt-6">
+        <Link
+          href={`/profile/${article.author.id}`}
+          className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[28px] shrink-0"
+        >
+          {initials}
+        </Link>
+        <div className="flex-1 min-w-0">
+          <Link
+            href={`/profile/${article.author.id}`}
+            className="text-xl font-semibold text-text-1 hover:text-primary transition-colors block"
+          >
+            {article.author.name}
+          </Link>
+          <p className="text-[15px] text-text-2 leading-[1.6] mt-2">
+            Staff writer. Writing about technology and human experience.
+          </p>
+          <button
+            type="button"
+            className="mt-2 px-4 py-2 rounded-full border border-primary text-primary text-sm font-medium hover:bg-primary/5 transition-colors"
+          >
+            Follow
+          </button>
+        </div>
+      </div>
+
+      <CommentSection />
     </article>
   );
 }
 ```
 
-**`prisma/seed.ts`** — เพิ่ม demo user และ articles (ต่อจากส่วน status)
+**`prisma/seed.ts`** — เพิ่ม demo user และ articles (ต่อจากส่วน status + categories)
 ```ts
   // Seed demo user and articles for Feed (Step 1.3)
   const demoUser = await prisma.user.upsert({
@@ -849,30 +1136,26 @@ export default async function ArticlePage({ params }: Props) {
     update: {},
     create: {
       email: 'demo@medium.local',
-      password: 'demo-hash-placeholder',
+      password: 'Pass@word123',
       name: 'Demo Author',
       statusId: 1,
     },
   })
 
-  // Reset demo articles on re-seed
   await prisma.article.deleteMany({ where: { authorId: demoUser.id } })
 
   const articles = [
     {
       title: 'The Future of Human-Computer Interaction in 2025',
-      content:
-        '<p>As AI systems become more capable, the relationship between humans and computers is evolving in unexpected ways. This article explores the trends shaping our digital future.</p><p>From voice interfaces to ambient computing, we are moving toward a world where technology fades into the background.</p>',
+      content: '<p>As AI systems become more capable, the relationship between humans and computers is evolving in unexpected ways. This article explores the trends shaping our digital future.</p><p>From voice interfaces to ambient computing, we are moving toward a world where technology fades into the background.</p>',
     },
     {
       title: 'The Last Programmer — A Short Story About AI',
-      content:
-        '<p>Artificial intelligence is no longer a distant dream. It is here, and it is changing how we work, create, and connect.</p>',
+      content: '<p>Artificial intelligence is no longer a distant dream. It is here, and it is changing how we work, create, and connect.</p>',
     },
     {
       title: 'Building a Medium Clone with Next.js and Prisma',
-      content:
-        '<p>Learn how to build a blog platform similar to Medium using Next.js 16, Prisma, and Tailwind CSS. We will cover authentication, article CRUD, and a responsive feed layout.</p>',
+      content: '<p>Learn how to build a blog platform similar to Medium using Next.js 16, Prisma, and Tailwind CSS. We will cover authentication, article CRUD, and a responsive feed layout.</p>',
     },
   ]
 
@@ -882,8 +1165,6 @@ export default async function ArticlePage({ params }: Props) {
     })
   }
 ```
-
----
 
 **`app/components/ArticleCard.tsx`** — Article card component
 ```tsx
@@ -904,22 +1185,13 @@ type ArticleCardProps = {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.slice(0, 2).toUpperCase();
 }
 
 export default function ArticleCard({
-  id,
-  title,
-  excerpt,
-  authorName,
-  publishedAt,
-  readTimeMinutes = 5,
-  categoryName,
-  likeCount = 0,
-  isLoggedIn = false,
+  id, title, excerpt, authorName, publishedAt,
+  readTimeMinutes = 5, categoryName, likeCount = 0, isLoggedIn = false,
 }: ArticleCardProps) {
   return (
     <article className="border border-border rounded-lg py-6 px-6">
@@ -931,26 +1203,17 @@ export default function ArticleCard({
           <span className="text-[13px] font-medium text-text-1">{authorName}</span>
         </div>
         <Link href={`/articles/${id}`} className="block group">
-          <h2 className="text-xl font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">
-            {title}
-          </h2>
+          <h2 className="text-xl font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">{title}</h2>
         </Link>
         <p className="text-sm text-text-2 line-clamp-2">{excerpt}</p>
         <div className="flex items-center gap-3 text-[13px] text-text-2">
-          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-text-1">
-            {categoryName ?? "Technology"}
-          </span>
+          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-text-1">{categoryName ?? "Technology"}</span>
           <span>{readTimeMinutes} min read</span>
           <span className={`flex items-center gap-1 ${likeCount > 0 ? "text-like" : ""}`}>
             <Heart className="w-3.5 h-3.5" strokeWidth={2} fill={likeCount > 0 ? "currentColor" : "none"} />
             {likeCount}
           </span>
-          <button
-            type="button"
-            disabled={!isLoggedIn}
-            className={`ml-auto p-0.5 ${!isLoggedIn ? "cursor-not-allowed opacity-50" : "hover:opacity-80"}`}
-            aria-label={isLoggedIn ? "Bookmark" : "Login to bookmark"}
-          >
+          <button type="button" disabled={!isLoggedIn} className={`ml-auto p-0.5 ${!isLoggedIn ? "cursor-not-allowed opacity-50" : "hover:opacity-80"}`} aria-label={isLoggedIn ? "Bookmark" : "Login to bookmark"}>
             <Bookmark className="w-3.5 h-3.5" strokeWidth={2} />
           </button>
         </div>
@@ -996,14 +1259,10 @@ export default function Sidebar() {
               <li key={i}>
                 <Link href={item.href} className="block group">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="w-5 h-5 rounded-full bg-primary shrink-0 flex items-center justify-center text-white text-[10px] font-medium" aria-hidden>
-                      {getInitials(item.author)}
-                    </span>
+                    <span className="w-5 h-5 rounded-full bg-primary shrink-0 flex items-center justify-center text-white text-[10px] font-medium" aria-hidden>{getInitials(item.author)}</span>
                     <span className="text-xs font-medium text-text-1">{item.author}</span>
                   </div>
-                  <span className="text-sm font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">
-                    {item.title}
-                  </span>
+                  <span className="text-sm font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">{item.title}</span>
                 </Link>
               </li>
             ))}
@@ -1014,11 +1273,7 @@ export default function Sidebar() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-3 mb-4">Recommended topics</h3>
           <div className="flex flex-wrap gap-2">
             {TOPICS.map((topic) => (
-              <Link
-                key={topic}
-                href={`/topics/${topic.toLowerCase()}`}
-                className="rounded-full bg-surface px-4 py-2 text-sm text-text-2 hover:bg-border hover:text-text-1 transition-colors"
-              >
+              <Link key={topic} href={`/topics/${topic.toLowerCase()}`} className="rounded-full bg-surface px-4 py-2 text-sm text-text-2 hover:bg-border hover:text-text-1 transition-colors">
                 {topic}
               </Link>
             ))}
