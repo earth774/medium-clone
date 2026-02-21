@@ -4,6 +4,7 @@ import { Heart, Share2, FilePen } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { CommentSection } from "./CommentSection";
+import { DeleteArticleButton } from "./DeleteArticleButton";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +136,10 @@ export default async function ArticlePage({ params }: Props) {
           {article._count.likes}
         </span>
         <div className="flex-1" />
+        {/* Delete button - only visible to article owner */}
+        {isOwner && (
+          <DeleteArticleButton articleId={article.id} />
+        )}
         <span className="flex items-center gap-1.5 text-sm text-text-2">
           <Share2 className="size-[14px]" strokeWidth={2} />
           Share
