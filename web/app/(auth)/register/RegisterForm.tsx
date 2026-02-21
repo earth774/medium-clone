@@ -1,18 +1,58 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // UI only — no auth logic yet
+    setError(null);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const name = (formData.get("name") as string)?.trim() ?? "";
+    const username = (formData.get("username") as string)?.trim() ?? "";
+    const email = (formData.get("email") as string)?.trim() ?? "";
+    const password = (formData.get("password") as string) ?? "";
+
+    if (!name || !email || !password) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await axios.post("/api/auth/register", {
+        name,
+        username: username || undefined,
+        email,
+        password,
+      });
+      router.push("/login?registered=1");
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded" role="alert">
+          {error}
+        </p>
+      )}
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-[13px] font-medium text-text-1">
           Full Name
@@ -24,6 +64,20 @@ export default function RegisterForm() {
           placeholder="Your name"
           className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
           autoComplete="name"
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="username" className="text-[13px] font-medium text-text-1">
+          Username <span className="text-text-3 font-normal">(optional)</span>
+        </label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          placeholder="johndoe"
+          className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
+          autoComplete="username"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -37,6 +91,7 @@ export default function RegisterForm() {
           placeholder="you@example.com"
           className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
           autoComplete="email"
+          required
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -63,9 +118,10 @@ export default function RegisterForm() {
       </div>
       <button
         type="submit"
-        className="h-11 w-full rounded-full bg-primary text-white font-medium text-base hover:opacity-90 transition-opacity"
+        disabled={isSubmitting}
+        className="h-11 w-full rounded-full bg-primary text-white font-medium text-base hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
       >
-        Create account
+        {isSubmitting ? "Creating account…" : "Create account"}
       </button>
       <p className="text-center text-sm text-text-2">
         Already have an account?{" "}
