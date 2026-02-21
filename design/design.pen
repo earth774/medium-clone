@@ -4588,7 +4588,9 @@
                       "name": "tabHome",
                       "stroke": {
                         "align": "inside",
-                        "thickness": 2,
+                        "thickness": {
+                          "bottom": 2
+                        },
                         "fill": "$color-text-1"
                       },
                       "padding": [
@@ -5450,6 +5452,79 @@
       "fill": "$color-bg",
       "layout": "vertical",
       "children": [
+        {
+          "type": "frame",
+          "id": "j3tqp",
+          "name": "Navbar",
+          "width": "fill_container",
+          "height": 57,
+          "fill": "#FFFFFF",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$color-border"
+          },
+          "padding": [
+            0,
+            44
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "Fbdyt",
+              "name": "homeNavLogo",
+              "fill": "$color-text-1",
+              "content": "Medium",
+              "fontFamily": "Source Serif 4",
+              "fontSize": 24,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "Yhe6o",
+              "name": "homeNavRight",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iNiV2",
+                  "name": "writeNav",
+                  "fill": "$color-text-1",
+                  "content": "Write",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "QtQ3O",
+                  "name": "homeAvatar",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$color-primary",
+                  "cornerRadius": 999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "CjZKf",
+                      "name": "homeAvatarTxt",
+                      "fill": "#FFFFFF",
+                      "content": "SC",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         {
           "type": "frame",
           "id": "za2Qx",
