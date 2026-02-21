@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import ProfileHeader from "./ProfileHeader";
@@ -30,6 +30,18 @@ type ProfileData = {
   };
   articles: Article[];
 };
+
+async function deleteArticle(id: string): Promise<void> {
+  const response = await fetch(`/api/articles/${id}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || "Failed to delete article");
+  }
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -62,6 +74,18 @@ export default function ProfilePage() {
 
     fetchProfile();
   }, [router]);
+
+  // All hooks must be before early returns
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteArticle(id);
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        articles: prev.articles.filter((a) => a.id !== id),
+      };
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -115,6 +139,7 @@ export default function ProfilePage() {
                     publishedAt={article.publishedAt}
                     readTimeMinutes={article.readTimeMinutes}
                     likeCount={article.likeCount}
+                    onDelete={handleDelete}
                   />
                 </div>
               </div>
