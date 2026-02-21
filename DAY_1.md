@@ -1804,3 +1804,287 @@ export default function Header() {
 
 ---
 
+## Step 1.7 — Profile Page UI
+
+ทำหน้า Profile ตาม design (design.pen — Page 5 Profile, node QPxFh) เฉพาะส่วน UI:
+
+- **ProfileHeader:** Avatar 80x80, ชื่อ (Source Serif 4), bio, Followers/Following, ปุ่ม Edit profile
+- **ProfileTabs:** Home / About (active tab มี underline)
+- **ProfileArticleCard:** title, excerpt, date, read time, likes, ปุ่ม Edit/Delete
+- **Responsive:** Mobile stack avatar/name; tabs scroll; article cards full width
+
+`**web/app/profile/layout.tsx`**
+
+```tsx
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Profile — Medium",
+  description: "View and manage your Medium profile",
+};
+
+export default function ProfileLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
+}
+```
+
+`**web/app/profile/ProfileHeader.tsx`**
+
+```tsx
+"use client";
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+type ProfileHeaderProps = {
+  name: string;
+  bio: string;
+  followersCount: string;
+  followingCount: string;
+};
+
+export default function ProfileHeader({
+  name,
+  bio,
+  followersCount,
+  followingCount,
+}: ProfileHeaderProps) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+        <div
+          className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[28px] shrink-0"
+          aria-hidden
+        >
+          {getInitials(name)}
+        </div>
+        <div className="flex flex-col gap-4 min-w-0 flex-1">
+          <h1 className="font-logo text-3xl sm:text-[32px] font-bold text-text-1">
+            {name}
+          </h1>
+          <p className="text-base text-text-2 max-w-[728px]">{bio}</p>
+          <div className="flex items-center gap-6 text-sm text-text-1">
+            <span>{followersCount} Followers</span>
+            <span>{followingCount} Following</span>
+          </div>
+          <button
+            type="button"
+            className="self-start rounded-full border border-border bg-white px-4 py-2 text-sm font-normal text-text-1 hover:bg-surface transition-colors"
+          >
+            ✏️ Edit profile
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+`**web/app/profile/ProfileTabs.tsx`**
+
+```tsx
+"use client";
+
+type TabId = "home" | "about";
+
+type ProfileTabsProps = {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+};
+
+export default function ProfileTabs({
+  activeTab,
+  onTabChange,
+}: ProfileTabsProps) {
+  return (
+    <div
+      className="flex border-b border-border -mb-px"
+      role="tablist"
+      aria-label="Profile sections"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === "home"}
+        onClick={() => onTabChange("home")}
+        className={`px-4 sm:px-0 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          activeTab === "home"
+            ? "text-text-1 border-text-1"
+            : "text-text-2 border-transparent hover:text-text-1"
+        }`}
+      >
+        Home
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === "about"}
+        onClick={() => onTabChange("about")}
+        className={`px-4 sm:px-4 py-3 text-sm font-normal transition-colors border-b-2 -mb-px ${
+          activeTab === "about"
+            ? "text-text-1 border-text-1 font-medium"
+            : "text-text-2 border-transparent hover:text-text-1"
+        }`}
+      >
+        About
+      </button>
+    </div>
+  );
+}
+```
+
+`**web/app/profile/ProfileArticleCard.tsx`**
+
+```tsx
+import Link from "next/link";
+import { Heart, Pencil, Trash2 } from "lucide-react";
+
+type ProfileArticleCardProps = {
+  id: string;
+  title: string;
+  excerpt: string;
+  publishedAt: string;
+  readTimeMinutes: number;
+  likeCount: number;
+};
+
+export default function ProfileArticleCard({
+  id,
+  title,
+  excerpt,
+  publishedAt,
+  readTimeMinutes,
+  likeCount,
+}: ProfileArticleCardProps) {
+  return (
+    <article className="border-b border-border py-6">
+      <div className="flex flex-col gap-3">
+        <Link href={`/articles/${id}`} className="block group">
+          <h2 className="text-xl font-semibold text-text-1 group-hover:text-primary transition-colors line-clamp-2">
+            {title}
+          </h2>
+        </Link>
+        <p className="text-sm text-text-2 line-clamp-2">{excerpt}</p>
+        <div className="flex flex-wrap items-center gap-3 text-[13px] text-text-2">
+          <span>{publishedAt}</span>
+          <span>{readTimeMinutes} min read</span>
+          <span
+            className={`flex items-center gap-1 ${likeCount > 0 ? "text-like" : ""}`}
+          >
+            <Heart
+              className="w-3.5 h-3.5"
+              strokeWidth={2}
+              fill={likeCount > 0 ? "currentColor" : "none"}
+            />
+            {likeCount}
+          </span>
+          <span className="flex-1" />
+          <button
+            type="button"
+            className="rounded border border-border px-3 py-1.5 text-sm text-text-1 hover:bg-surface transition-colors flex items-center gap-1.5"
+          >
+            <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
+            Edit
+          </button>
+          <button
+            type="button"
+            className="rounded border border-border px-3 py-1.5 text-sm text-text-1 hover:bg-surface transition-colors flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+            Delete
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+```
+
+`**web/app/profile/page.tsx`**
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import ProfileHeader from "./ProfileHeader";
+import ProfileTabs from "./ProfileTabs";
+import ProfileArticleCard from "./ProfileArticleCard";
+
+// Mock data for UI — TODO: wire to API/auth
+const MOCK_PROFILE = {
+  name: "Sarah Chen",
+  bio: "Staff writer. I cover technology, culture, and the messy places where they meet. Based in San Francisco. Previously at Wired.",
+  followersCount: "12.4K",
+  followingCount: "248",
+};
+
+const MOCK_ARTICLES = [
+  {
+    id: "1",
+    title: "The Future of Human-Computer Interaction",
+    excerpt:
+      "As AI systems become more capable, our assumptions about intelligence are being challenged...",
+    publishedAt: "Feb 12",
+    readTimeMinutes: 5,
+    likeCount: 142,
+  },
+];
+
+export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState<"home" | "about">("home");
+
+  return (
+    <div className="w-full max-w-[728px] mx-auto pt-12 pb-12 flex flex-col gap-8">
+      <ProfileHeader
+        name={MOCK_PROFILE.name}
+        bio={MOCK_PROFILE.bio}
+        followersCount={MOCK_PROFILE.followersCount}
+        followingCount={MOCK_PROFILE.followingCount}
+      />
+
+      <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {activeTab === "home" && (
+        <div className="flex flex-col">
+          {MOCK_ARTICLES.length === 0 ? (
+            <p className="py-12 text-center text-text-2">No articles yet.</p>
+          ) : (
+            MOCK_ARTICLES.map((article) => (
+              <ProfileArticleCard
+                key={article.id}
+                id={article.id}
+                title={article.title}
+                excerpt={article.excerpt}
+                publishedAt={article.publishedAt}
+                readTimeMinutes={article.readTimeMinutes}
+                likeCount={article.likeCount}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "about" && (
+        <div className="py-8">
+          <p className="text-text-2">
+            About content — placeholder for profile about section.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+
