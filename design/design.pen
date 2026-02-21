@@ -4803,7 +4803,7 @@
       "y": 30045,
       "name": "Page 6 — Edit Profile",
       "width": 840,
-      "height": 773,
+      "height": 1248,
       "fill": "$color-bg",
       "layout": "vertical",
       "gap": 48,
@@ -4887,167 +4887,300 @@
           "id": "DSjO0",
           "name": "epCard",
           "width": 500,
-          "fill": "#FFFFFF",
-          "cornerRadius": 8,
-          "stroke": {
-            "thickness": 1,
-            "fill": "$color-border"
-          },
+          "fill": "transparent",
           "layout": "vertical",
           "gap": 24,
-          "padding": [
-            48,
-            40
-          ],
           "children": [
             {
-              "type": "text",
-              "id": "m6v6F",
-              "name": "epTitle",
-              "fill": "$color-text-1",
-              "content": "Edit profile",
-              "fontFamily": "Source Serif 4",
-              "fontSize": 24,
-              "fontWeight": "600"
-            },
-            {
               "type": "frame",
-              "id": "TwcqE",
-              "name": "epAvatarSection",
+              "id": "2AWbv",
+              "name": "epProfileCard",
               "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "outside",
+                "thickness": 1,
+                "fill": "$color-border"
+              },
               "layout": "vertical",
-              "gap": 12,
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "Ndwph",
-                  "name": "epAvR",
-                  "width": 80,
-                  "height": 80,
-                  "fill": "$color-primary",
-                  "cornerRadius": 999,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "mifs7",
-                      "name": "epAvRt",
-                      "fill": "#FFFFFF",
-                      "content": "SC",
-                      "fontFamily": "Inter",
-                      "fontSize": 28,
-                      "fontWeight": "700"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "VK2x4",
-              "name": "epNameGroup",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 4,
+              "gap": 24,
+              "padding": [
+                48,
+                40
+              ],
               "children": [
                 {
                   "type": "text",
-                  "id": "w6IbL",
-                  "name": "epNameLabel",
+                  "id": "m6v6F",
+                  "name": "epTitle",
                   "fill": "$color-text-1",
-                  "content": "Name",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "500"
+                  "content": "Edit profile",
+                  "fontFamily": "Source Serif 4",
+                  "fontSize": 24,
+                  "fontWeight": "600"
                 },
                 {
                   "type": "frame",
-                  "id": "sA2pe",
-                  "name": "epNameField",
+                  "id": "TwcqE",
+                  "name": "epAvatarSection",
                   "width": "fill_container",
-                  "height": 40,
-                  "stroke": {
-                    "align": "outside",
-                    "thickness": 1,
-                    "fill": "$color-border"
-                  },
-                  "padding": [
-                    0,
-                    12
-                  ],
+                  "layout": "vertical",
+                  "gap": 12,
                   "alignItems": "center",
                   "children": [
                     {
+                      "type": "frame",
+                      "id": "Ndwph",
+                      "name": "epAvR",
+                      "width": 80,
+                      "height": 80,
+                      "fill": "$color-primary",
+                      "cornerRadius": 999,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mifs7",
+                          "name": "epAvRt",
+                          "fill": "#FFFFFF",
+                          "content": "SC",
+                          "fontFamily": "Inter",
+                          "fontSize": 28,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VK2x4",
+                  "name": "epNameGroup",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
                       "type": "text",
-                      "id": "mw5du",
-                      "name": "epNameVal",
+                      "id": "w6IbL",
+                      "name": "epNameLabel",
                       "fill": "$color-text-1",
-                      "content": "Sarah Chen",
+                      "content": "Name",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
-                      "fontWeight": "normal"
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sA2pe",
+                      "name": "epNameField",
+                      "width": "fill_container",
+                      "height": 40,
+                      "stroke": {
+                        "align": "outside",
+                        "thickness": 1,
+                        "fill": "$color-border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mw5du",
+                          "name": "epNameVal",
+                          "fill": "$color-text-1",
+                          "content": "Sarah Chen",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
                     }
                   ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "TDd3D",
-              "name": "epUsernameGroup",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 4,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "zu4KZ",
-                  "name": "epUsernameLabel",
-                  "fill": "$color-text-1",
-                  "content": "Username",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "500"
                 },
                 {
                   "type": "frame",
-                  "id": "QuRjv",
-                  "name": "epUsernameField",
+                  "id": "TDd3D",
+                  "name": "epUsernameGroup",
                   "width": "fill_container",
-                  "height": 40,
-                  "stroke": {
-                    "align": "outside",
-                    "thickness": 1,
-                    "fill": "$color-border"
-                  },
-                  "gap": 2,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "alignItems": "center",
+                  "layout": "vertical",
+                  "gap": 4,
                   "children": [
                     {
                       "type": "text",
-                      "id": "J3Z5X",
-                      "name": "epUsernamePrefix",
-                      "fill": "$color-text-3",
-                      "content": "@",
+                      "id": "zu4KZ",
+                      "name": "epUsernameLabel",
+                      "fill": "$color-text-1",
+                      "content": "Username",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
-                      "fontWeight": "normal"
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QuRjv",
+                      "name": "epUsernameField",
+                      "width": "fill_container",
+                      "height": 40,
+                      "stroke": {
+                        "align": "outside",
+                        "thickness": 1,
+                        "fill": "$color-border"
+                      },
+                      "gap": 2,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "J3Z5X",
+                          "name": "epUsernamePrefix",
+                          "fill": "$color-text-3",
+                          "content": "@",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dm5oE",
+                          "name": "epUsernameVal",
+                          "fill": "$color-text-1",
+                          "content": "sarahchen",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "lZLaw",
+                  "name": "epBioGroup",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OJ23e",
+                      "name": "epBioLabel",
+                      "fill": "$color-text-1",
+                      "content": "Bio",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "id1t4",
+                      "name": "epBioField",
+                      "width": "fill_container",
+                      "height": 80,
+                      "stroke": {
+                        "align": "outside",
+                        "thickness": 1,
+                        "fill": "$color-border"
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oRYsl",
+                          "name": "epBioVal",
+                          "fill": "$color-text-1",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Staff writer. I cover technology, culture, and the messy places where they meet.",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
                     },
                     {
                       "type": "text",
-                      "id": "dm5oE",
-                      "name": "epUsernameVal",
-                      "fill": "$color-text-1",
-                      "content": "sarahchen",
+                      "id": "KyWy4",
+                      "name": "epBioCounter",
+                      "fill": "$color-text-3",
+                      "content": "81 / 160",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 12,
                       "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ckJrY",
+                  "name": "epBtnRow",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "6iEK3",
+                      "name": "epSaveBtn",
+                      "height": 44,
+                      "fill": "$color-primary",
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        24
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iGeFl",
+                          "name": "epSaveTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Save changes",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "v5pZ0",
+                      "name": "epCancelBtn",
+                      "height": 44,
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        24
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fdhfT",
+                          "name": "epCancelTxt",
+                          "fill": "$color-text-2",
+                          "content": "Cancel",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -5055,76 +5188,230 @@
             },
             {
               "type": "frame",
-              "id": "lZLaw",
-              "name": "epBioGroup",
+              "id": "YMObL",
+              "name": "epPasswordCard",
               "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "outside",
+                "thickness": 1,
+                "fill": "$color-border"
+              },
               "layout": "vertical",
-              "gap": 4,
+              "gap": 24,
+              "padding": [
+                48,
+                40
+              ],
               "children": [
                 {
-                  "type": "text",
-                  "id": "OJ23e",
-                  "name": "epBioLabel",
-                  "fill": "$color-text-1",
-                  "content": "Bio",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "500"
-                },
-                {
                   "type": "frame",
-                  "id": "id1t4",
-                  "name": "epBioField",
+                  "id": "VM6T6",
+                  "name": "epPasswordSection",
                   "width": "fill_container",
-                  "height": 80,
-                  "stroke": {
-                    "align": "outside",
-                    "thickness": 1,
-                    "fill": "$color-border"
-                  },
                   "layout": "vertical",
-                  "padding": [
-                    8,
-                    12
-                  ],
+                  "gap": 24,
                   "children": [
                     {
                       "type": "text",
-                      "id": "oRYsl",
-                      "name": "epBioVal",
+                      "id": "zbX5C",
+                      "name": "epPasswordTitle",
                       "fill": "$color-text-1",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "Staff writer. I cover technology, culture, and the messy places where they meet.",
+                      "content": "Change password",
                       "fontFamily": "Inter",
                       "fontSize": 14,
-                      "fontWeight": "normal"
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "08sSc",
+                      "name": "epOldPasswordGroup",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "acLZk",
+                          "name": "epOldPasswordLabel",
+                          "fill": "$color-text-1",
+                          "content": "Current password",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "0cHOC",
+                          "name": "epOldPasswordField",
+                          "width": "fill_container",
+                          "height": 40,
+                          "stroke": {
+                            "align": "outside",
+                            "thickness": 1,
+                            "fill": "$color-border"
+                          },
+                          "gap": 8,
+                          "padding": [
+                            0,
+                            12
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "F8bW7",
+                              "name": "epOldPasswordVal",
+                              "fill": "$color-text-3",
+                              "content": "••••••••",
+                              "fontFamily": "Inter",
+                              "fontSize": 15,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "UOUwV",
+                              "name": "epOldPasswordShowBtn",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "eye",
+                              "iconFontFamily": "lucide",
+                              "fill": "$color-text-3"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fSa89",
+                      "name": "epNewPasswordGroup",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HF81b",
+                          "name": "epNewPasswordLabel",
+                          "fill": "$color-text-1",
+                          "content": "New password",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Nu2IF",
+                          "name": "epNewPasswordField",
+                          "width": "fill_container",
+                          "height": 40,
+                          "stroke": {
+                            "align": "outside",
+                            "thickness": 1,
+                            "fill": "$color-border"
+                          },
+                          "gap": 8,
+                          "padding": [
+                            0,
+                            12
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wiINv",
+                              "name": "epNewPasswordVal",
+                              "fill": "$color-text-3",
+                              "content": "••••••••",
+                              "fontFamily": "Inter",
+                              "fontSize": 15,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "pZCPI",
+                              "name": "epNewPasswordShowBtn",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "eye",
+                              "iconFontFamily": "lucide",
+                              "fill": "$color-text-3"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pOHwN",
+                      "name": "epConfirmPasswordGroup",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mGTrX",
+                          "name": "epConfirmPasswordLabel",
+                          "fill": "$color-text-1",
+                          "content": "Confirm password",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "nadbG",
+                          "name": "epConfirmPasswordField",
+                          "width": "fill_container",
+                          "height": 40,
+                          "stroke": {
+                            "align": "outside",
+                            "thickness": 1,
+                            "fill": "$color-border"
+                          },
+                          "gap": 8,
+                          "padding": [
+                            0,
+                            12
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "RwdmS",
+                              "name": "epConfirmPasswordVal",
+                              "fill": "$color-text-3",
+                              "content": "••••••••",
+                              "fontFamily": "Inter",
+                              "fontSize": 15,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "q4lVh",
+                              "name": "epConfirmPasswordShowBtn",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "eye",
+                              "iconFontFamily": "lucide",
+                              "fill": "$color-text-3"
+                            }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 },
                 {
-                  "type": "text",
-                  "id": "KyWy4",
-                  "name": "epBioCounter",
-                  "fill": "$color-text-3",
-                  "content": "81 / 160",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "ckJrY",
-              "name": "epBtnRow",
-              "width": "fill_container",
-              "gap": 12,
-              "children": [
-                {
                   "type": "frame",
-                  "id": "6iEK3",
-                  "name": "epSaveBtn",
+                  "id": "U8Q43",
+                  "name": "epUpdatePwdBtn",
                   "height": 44,
                   "fill": "$color-primary",
                   "cornerRadius": 999,
@@ -5137,38 +5424,13 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "iGeFl",
-                      "name": "epSaveTxt",
+                      "id": "wVRQY",
+                      "name": "epUpdatePwdBtnTxt",
                       "fill": "#FFFFFF",
-                      "content": "Save changes",
+                      "content": "Update password",
                       "fontFamily": "Inter",
                       "fontSize": 15,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "v5pZ0",
-                  "name": "epCancelBtn",
-                  "height": 44,
-                  "cornerRadius": 999,
-                  "padding": [
-                    0,
-                    24
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "fdhfT",
-                      "name": "epCancelTxt",
-                      "fill": "$color-text-2",
-                      "content": "Cancel",
-                      "fontFamily": "Inter",
-                      "fontSize": 15,
-                      "fontWeight": "normal"
+                      "fontWeight": "600"
                     }
                   ]
                 }

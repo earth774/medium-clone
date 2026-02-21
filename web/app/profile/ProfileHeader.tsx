@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Pencil } from "lucide-react";
 
 function getInitials(name: string): string {
@@ -41,13 +42,13 @@ export default function ProfileHeader({
             <span>{followersCount} Followers</span>
             <span>{followingCount} Following</span>
           </div>
-          <button
-            type="button"
+          <Link
+            href="/profile/edit"
             className="self-start rounded-full border border-border bg-white px-4 py-2 text-sm font-normal text-text-1 hover:bg-surface transition-colors flex items-center gap-2"
           >
             <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
             Edit profile
-          </button>
+          </Link>
         </div>
       </div>
     </div>
