@@ -1474,3 +1474,130 @@ export default function LoginForm() {
 ```
 
 ---
+
+## Step 1.5 — Register Page UI
+
+### ทำอะไร
+- สร้างหน้า Register (`/register`) ตาม design ใน design.pen (node FYiSq — Page 4 Register)
+- เฉพาะส่วน UI Design — ไม่มี logic auth จริง
+- รองรับ responsive (mobile, tablet, desktop)
+
+### อธิบาย
+- **Route:** `app/(auth)/register/page.tsx` — ใช้ route group `(auth)` ตาม nextjs-core
+- **Design:** Card 400px, logo "Medium", title "Join Medium.", subtitle "Create your account.", ช่อง Full Name, Email, Password (มี Show/Hide), ปุ่ม Create account, ลิงก์ "Already have an account? Sign in"
+- **Responsive:** Card `max-w-[400px]` บน mobile, padding ปรับตาม breakpoint (p-6 sm:p-10 sm:px-12 sm:py-10)
+- **UI only:** Form มี `preventDefault` — ยังไม่เชื่อม API หรือ session
+
+### Code
+
+**`app/(auth)/register/page.tsx`** — Register page (Server Component)
+```tsx
+import type { Metadata } from "next";
+import RegisterForm from "./RegisterForm";
+
+export const metadata: Metadata = {
+  title: "Create account – Medium",
+  description: "Create your Medium account.",
+};
+
+export default function RegisterPage() {
+  return (
+    <div className="min-h-[calc(100vh-57px-4rem)] flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+      <div className="w-full max-w-[400px] bg-white rounded-lg border border-border p-6 sm:p-10 sm:px-12 sm:py-10 flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-logo text-[28px] font-bold text-text-1">Medium</h1>
+          <h2 className="font-logo text-[32px] font-bold text-text-1 leading-tight">
+            Join Medium.
+          </h2>
+          <p className="text-sm text-text-2">Create your account.</p>
+        </div>
+        <RegisterForm />
+      </div>
+    </div>
+  );
+}
+```
+
+**`app/(auth)/register/RegisterForm.tsx`** — Form (Client Component)
+```tsx
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+export default function RegisterForm() {
+  const [showPassword, setShowPassword] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    // UI only — no auth logic yet
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="name" className="text-[13px] font-medium text-text-1">
+          Full Name
+        </label>
+        <input
+          id="name"
+          type="text"
+          name="name"
+          placeholder="Your name"
+          className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
+          autoComplete="name"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="email" className="text-[13px] font-medium text-text-1">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
+          autoComplete="email"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="password" className="text-[13px] font-medium text-text-1">
+          Password
+        </label>
+        <div className="flex h-10 w-full items-center justify-between gap-2 rounded border border-border bg-white px-3 focus-within:border-primary focus-within:outline-none focus-within:ring-1 focus-within:ring-primary">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="••••••••"
+            className="flex-1 min-w-0 bg-transparent text-[15px] text-text-1 placeholder:text-text-3 focus:outline-none"
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((p) => !p)}
+            className="text-[13px] text-text-2 hover:text-text-1 shrink-0"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+      </div>
+      <button
+        type="submit"
+        className="h-11 w-full rounded-full bg-primary text-white font-medium text-base hover:opacity-90 transition-opacity"
+      >
+        Create account
+      </button>
+      <p className="text-center text-sm text-text-2">
+        Already have an account?{" "}
+        <Link href="/login" className="font-semibold text-primary hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </form>
+  );
+}
+```
+
+---
