@@ -34,7 +34,7 @@ export default async function ArticlePage({ params }: Props) {
   const article = await prisma.article.findUnique({
     where: { id },
     include: {
-      author: { select: { id: true, name: true } },
+      author: { select: { id: true, name: true, username: true } },
       categories: {
         where: { statusId: 1 },
         include: { category: { select: { id: true, name: true } } },
@@ -84,6 +84,9 @@ export default async function ArticlePage({ params }: Props) {
     year: "numeric",
   }).format(article.createdAt);
 
+  // Use username for profile URL if available, otherwise use id
+  const profileIdentifier = article.author.username || article.author.id;
+
   return (
     <article className={`max-w-[680px] mx-auto pt-12 pb-12 flex flex-col gap-6 ${isDraft ? "relative" : ""}`}>
       {isDraft && (
@@ -123,14 +126,14 @@ export default async function ArticlePage({ params }: Props) {
       {/* Author bar */}
       <div className="flex items-center gap-3">
         <Link
-          href={`/profile/${article.author.id}`}
+          href={`/profile/${profileIdentifier}`}
           className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[15px] shrink-0"
         >
           {initials}
         </Link>
         <div className="flex-1 min-w-0">
           <Link
-            href={`/profile/${article.author.id}`}
+            href={`/profile/${profileIdentifier}`}
             className="text-base font-semibold text-text-1 hover:text-primary transition-colors block"
           >
             {article.author.name}
@@ -212,14 +215,14 @@ export default async function ArticlePage({ params }: Props) {
       {/* Bottom author card */}
       <div className="flex gap-6 pt-6">
         <Link
-          href={`/profile/${article.author.id}`}
+          href={`/profile/${profileIdentifier}`}
           className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[28px] shrink-0"
         >
           {initials}
         </Link>
         <div className="flex-1 min-w-0">
           <Link
-            href={`/profile/${article.author.id}`}
+            href={`/profile/${profileIdentifier}`}
             className="text-xl font-semibold text-text-1 hover:text-primary transition-colors block"
           >
             {article.author.name}

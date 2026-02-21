@@ -36,7 +36,7 @@ export default async function RootLayout({
         className={`${inter.className} min-h-screen antialiased bg-bg text-text-1`}
         suppressHydrationWarning
       >
-        <Header user={session ? { id: session.userId, name: session.name } : null} />
+        <Header user={session ? { id: session.userId, name: session.name, username: session.username } : null} />
         <main className="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-11 py-8">
           {children}
         </main>

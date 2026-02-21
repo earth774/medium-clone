@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import ProfileHeader from "./ProfileHeader";
-import ProfileTabs from "./ProfileTabs";
-import ProfileArticleCard from "./ProfileArticleCard";
+import ProfileHeader from "../ProfileHeader";
+import ProfileTabs from "../ProfileTabs";
+import ProfileArticleCard from "../ProfileArticleCard";
 import { FilePen } from "lucide-react";
 
 type Article = {
@@ -31,6 +31,10 @@ type ProfileData = {
   articles: Article[];
 };
 
+type Props = {
+  params: Promise<{ username: string }>;
+};
+
 async function deleteArticle(id: string): Promise<void> {
   const response = await fetch(`/api/articles/${id}`, {
     method: "DELETE",
@@ -43,37 +47,43 @@ async function deleteArticle(id: string): Promise<void> {
   }
 }
 
-export default function ProfilePage() {
+export default function PublicProfilePage({ params }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"home" | "about">("home");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
+    async function loadParams() {
+      const { username: uname } = await params;
+      setUsername(uname);
+    }
+    loadParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!username) return;
+
     async function fetchProfile() {
       try {
         setIsLoading(true);
-        // First, get current user session
-        const sessionRes = await axios.get("/api/profile");
-        const userId = sessionRes.data.user.id;
-
-        // Then, fetch public profile data
-        const profileRes = await axios.get<ProfileData>(`/api/users/${userId}`);
+        const profileRes = await axios.get<ProfileData>(`/api/users/${username}`);
         setProfile(profileRes.data);
       } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          router.push("/login?redirect=/profile");
-          return;
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+          setError("User not found");
+        } else {
+          setError("Failed to load profile");
         }
-        setError("Failed to load profile");
       } finally {
         setIsLoading(false);
       }
     }
 
     fetchProfile();
-  }, [router]);
+  }, [username]);
 
   // All hooks must be before early returns
   const handleDelete = useCallback(async (id: string) => {

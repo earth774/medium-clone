@@ -6,12 +6,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type HeaderProps = {
-  user: { id: string; name: string } | null;
+  user: { id: string; name: string; username: string } | null;
 };
 
 export default function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isLoggedIn = !!user;
+
+  // Build profile URL: use username if available, fallback to id
+  const profileUrl = user?.username
+    ? `/profile/${user.username}`
+    : user?.id
+      ? `/profile/${user.id}`
+      : "/profile";
 
   const router = useRouter();
 
@@ -45,7 +52,7 @@ export default function Header({ user }: HeaderProps) {
               Write
             </Link>
             <Link
-              href="/profile"
+              href={profileUrl}
               className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm"
               aria-label="Profile"
             >
@@ -129,7 +136,7 @@ export default function Header({ user }: HeaderProps) {
                   Write
                 </Link>
                 <Link
-                  href="/profile"
+                  href={profileUrl}
                   className="py-2 text-text-1"
                   onClick={() => setMobileMenuOpen(false)}
                 >
