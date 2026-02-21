@@ -1,11 +1,29 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function Header() {
+type HeaderProps = {
+  user: { id: string; name: string } | null;
+};
+
+export default function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isLoggedIn = false; // TODO: wire to auth
+  const isLoggedIn = !!user;
+
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      await axios.post("/api/auth/logout");
+      router.push("/");
+      router.refresh();
+    } catch {
+      router.refresh();
+    }
+  }
 
   return (
     <header className="relative h-[57px] flex items-center justify-between px-4 sm:px-6 lg:px-11 border-b border-border bg-bg">
@@ -31,8 +49,15 @@ export default function Header() {
               className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm"
               aria-label="Profile"
             >
-              A
+              {user.name.charAt(0).toUpperCase()}
             </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-text-2 hover:text-text-1 text-sm"
+            >
+              Log out
+            </button>
           </>
         ) : (
           <>
@@ -110,6 +135,16 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="py-2 text-text-1 text-left w-full"
+                >
+                  Log out
+                </button>
               </>
             ) : (
               <>

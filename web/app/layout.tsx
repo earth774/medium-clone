@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
+import { getSession } from "@/lib/auth";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -19,11 +20,12 @@ export const metadata: Metadata = {
   description: "Medium is a place to read, write, and connect with ideas that matter.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession();
   return (
     <html
       lang="th"
@@ -34,7 +36,7 @@ export default function RootLayout({
         className={`${inter.className} min-h-screen antialiased bg-bg text-text-1`}
         suppressHydrationWarning
       >
-        <Header />
+        <Header user={session ? { id: session.userId, name: session.name } : null} />
         <main className="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-11 py-8">
           {children}
         </main>

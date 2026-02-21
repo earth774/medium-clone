@@ -1,18 +1,51 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // UI only — no auth logic yet
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const email = (formData.get("email") as string)?.trim() ?? "";
+    const password = (formData.get("password") as string) ?? "";
+
+    if (!email || !password) {
+      setError("Please fill in email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await axios.post("/api/auth/login", { email, password });
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded" role="alert">
+          {error}
+        </p>
+      )}
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-[13px] font-medium text-text-1">
           Email
@@ -50,9 +83,10 @@ export default function LoginForm() {
       </div>
       <button
         type="submit"
-        className="h-11 w-full rounded-full bg-primary text-white font-medium text-base hover:opacity-90 transition-opacity"
+        disabled={isSubmitting}
+        className="h-11 w-full rounded-full bg-primary text-white font-medium text-base hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
       >
-        Sign in
+        {isSubmitting ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-sm text-text-2">
         No account?{" "}
