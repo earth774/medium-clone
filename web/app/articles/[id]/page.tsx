@@ -56,10 +56,10 @@ export default async function ArticlePage({ params }: Props) {
         {article.title}
       </h1>
 
-      {/* Subtitle - excerpt from content */}
-      {excerpt && (
+      {/* Subtitle - from article or excerpt from content */}
+      {(article.subtitle || excerpt) && (
         <p className="font-logo text-2xl font-semibold leading-[1.4] text-text-2">
-          {excerpt}{plainContent.length > 200 ? "…" : ""}
+          {article.subtitle ?? `${excerpt}${plainContent.length > 200 ? "…" : ""}`}
         </p>
       )}
 

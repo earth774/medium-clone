@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { marked } from "marked";
+import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -62,6 +64,83 @@ export async function GET(request: NextRequest) {
     console.error("GET /api/articles error:", error);
     return NextResponse.json(
       { error: "Failed to fetch articles" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { title, subtitle, content, categoryId, publish } = body;
+
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return NextResponse.json(
+        { error: "Title is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!content || typeof content !== "string") {
+      return NextResponse.json(
+        { error: "Content is required" },
+        { status: 400 }
+      );
+    }
+
+    const statusId = publish ? 1 : 2;
+    const validCategoryId =
+      typeof categoryId === "number" && Number.isInteger(categoryId) && categoryId > 0
+        ? categoryId
+        : null;
+
+    const rawContent = content.trim();
+    const htmlContent = marked.parse(rawContent, { async: false }) as string;
+
+    const article = await prisma.article.create({
+      data: {
+        title: title.trim(),
+        subtitle: subtitle && typeof subtitle === "string" ? subtitle.trim() || null : null,
+        content: htmlContent,
+        authorId: session.userId,
+        statusId,
+      },
+      include: {
+        author: { select: { id: true, name: true } },
+      },
+    });
+
+    if (validCategoryId) {
+      const maxAc = await prisma.articleCategory.findFirst({
+        orderBy: { id: "desc" },
+        select: { id: true },
+      });
+      await prisma.articleCategory.create({
+        data: {
+          id: (maxAc?.id ?? 0) + 1,
+          articleId: article.id,
+          categoryId: validCategoryId,
+          statusId: 1,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      id: article.id,
+      title: article.title,
+      subtitle: article.subtitle,
+      statusId: article.statusId,
+      author: article.author,
+    });
+  } catch (error) {
+    console.error("POST /api/articles error:", error);
+    return NextResponse.json(
+      { error: "Failed to create article" },
       { status: 500 }
     );
   }

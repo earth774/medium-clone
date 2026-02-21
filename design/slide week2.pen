@@ -3144,6 +3144,42 @@
                         },
                         {
                           "type": "frame",
+                          "id": "FJnZU",
+                          "name": "s7d1i4",
+                          "width": "fill_container",
+                          "fill": "#1e293b",
+                          "cornerRadius": 8,
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "aj1TB",
+                              "name": "s7d1i4check",
+                              "fill": "#ffffff",
+                              "content": "✅",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "ZQ3gj",
+                              "name": "s7d1i4text",
+                              "fill": "#e2e8f0",
+                              "content": "Write Articles",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
                           "id": "Zdj53",
                           "name": "s7d1i3",
                           "width": "fill_container",
@@ -3180,7 +3216,7 @@
                         },
                         {
                           "type": "frame",
-                          "id": "FJnZU",
+                          "id": "hNZ8P",
                           "name": "s7d1i4",
                           "width": "fill_container",
                           "fill": "#1e293b",
@@ -3194,7 +3230,7 @@
                           "children": [
                             {
                               "type": "text",
-                              "id": "aj1TB",
+                              "id": "JSKUu",
                               "name": "s7d1i4check",
                               "fill": "#ffffff",
                               "content": "✅",
@@ -3204,10 +3240,10 @@
                             },
                             {
                               "type": "text",
-                              "id": "ZQ3gj",
+                              "id": "wwAUA",
                               "name": "s7d1i4text",
                               "fill": "#e2e8f0",
-                              "content": "Write Articles",
+                              "content": "Profile Page",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -3379,6 +3415,42 @@
                               "name": "s7d2i3text",
                               "fill": "#e2e8f0",
                               "content": "Like Artile",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HUTd2",
+                          "name": "s7d2i3",
+                          "width": "fill_container",
+                          "fill": "#1e293b",
+                          "cornerRadius": 8,
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "UUWCQ",
+                              "name": "s7d2i3check",
+                              "fill": "#ffffff",
+                              "content": "✅",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "FUOoN",
+                              "name": "s7d2i3text",
+                              "fill": "#e2e8f0",
+                              "content": "Deploy",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"

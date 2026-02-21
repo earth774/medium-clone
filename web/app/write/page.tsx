@@ -1,19 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { ArrowLeft } from "lucide-react";
 
 import MarkdownEditor from "./MarkdownEditor";
 
-const TOPICS = [
-  { id: "tech", label: "Technology" },
-  { id: "design", label: "Design" },
-  { id: "business", label: "Business" },
-  { id: "science", label: "Science" },
-  { id: "culture", label: "Culture" },
-  { id: "more", label: "+ More" },
-];
+type Category = { id: number; name: string };
 
 const MARKDOWN_PLACEHOLDER = `# Write your article in Markdown
 
@@ -26,17 +21,63 @@ const MARKDOWN_PLACEHOLDER = `# Write your article in Markdown
 > Blockquotes | \`\`\` Code blocks \`\`\``;
 
 export default function WritePage() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [body, setBody] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState<string | null>("business");
-  const [draftStatus, setDraftStatus] = useState<string | null>("Draft saved 2:34 PM");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    axios
+      .get<{ items: Category[] }>("/api/categories")
+      .then((res) => setCategories(res.data.items))
+      .catch(() => setCategories([]));
+  }, []);
+
+  async function handleSave(publish: boolean) {
+    setError(null);
+    if (!title.trim()) {
+      setError("กรุณากรอกหัวข้อ");
+      return;
+    }
+    if (!body.trim()) {
+      setError("กรุณากรอกเนื้อหา");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { data } = await axios.post("/api/articles", {
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        content: body.trim(),
+        categoryId: selectedCategoryId ?? undefined,
+        publish,
+      });
+      if (publish) {
+        router.push(`/articles/${data.id}`);
+      } else {
+        setDraftStatus(`Draft saved ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`);
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="flex flex-col w-full min-h-0">
       {/* Editor Top Bar - full width, flush with navbar */}
       <div
-        className="flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg flex-wrap sm:flex-nowrap -mx-4 sm:-mx-6 lg:-mx-11 -mt-8"
+        className="relative z-10 flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg flex-wrap sm:flex-nowrap -mx-4 sm:-mx-6 lg:-mx-11 -mt-8"
       >
         <div className="flex items-center gap-4 order-1 sm:order-1 min-w-0">
           <Link
@@ -54,15 +95,24 @@ export default function WritePage() {
           )}
         </div>
         <div className="flex items-center gap-3 order-2 sm:order-2 w-full sm:w-auto justify-end">
+          {error && (
+            <span className="text-red-500 text-sm">{error}</span>
+          )}
+          {/* Save draft - ซ่อนไว้ก่อน
           <button
             type="button"
-            className="px-4 py-2 text-text-2 hover:text-text-1 text-sm"
+            onClick={() => handleSave(false)}
+            disabled={isSubmitting}
+            className="px-4 py-2 text-text-2 hover:text-text-1 text-sm disabled:opacity-50"
           >
             Save draft
           </button>
+          */}
           <button
             type="button"
-            className="rounded-full bg-primary text-white px-5 py-2.5 text-[15px] font-medium hover:opacity-90 transition-opacity"
+            onClick={() => handleSave(true)}
+            disabled={isSubmitting}
+            className="rounded-full bg-primary text-white px-5 py-2.5 text-[15px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             Publish
           </button>
@@ -100,27 +150,28 @@ export default function WritePage() {
               Add a topic
             </span>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1">
-              {TOPICS.map((topic) => {
-                const isActive = selectedTopic === topic.id;
+              {categories.map((cat) => {
+                const isActive = selectedCategoryId === cat.id;
                 return (
                   <button
-                    key={topic.id}
+                    key={cat.id}
                     type="button"
                     onClick={() =>
-                      setSelectedTopic(topic.id === "more" ? null : topic.id)
+                      setSelectedCategoryId((prev) =>
+                        prev === cat.id ? null : cat.id
+                      )
                     }
                     className={`
-                      flex-shrink-0 rounded-full px-3.5 py-1.5 text-[13px] border
+                      shrink-0 rounded-full px-3.5 py-1.5 text-[13px] border
                       transition-colors
                       ${
                         isActive
                           ? "bg-primary text-white border-primary"
                           : "bg-surface text-text-1 border-border hover:border-text-3"
                       }
-                      ${topic.id === "more" ? "text-text-2" : ""}
                     `}
                   >
-                    {topic.label}
+                    {cat.name}
                   </button>
                 );
               })}
