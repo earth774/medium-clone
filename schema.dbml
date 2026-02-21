@@ -12,6 +12,7 @@ Table status {
 Table user {
   id varchar [primary key, not null, note: "รหัสผู้ใช้ (PK, CUID)"]
   email varchar [not null, unique, note: "อีเมล (unique)"]
+  username varchar [not null, unique, note: "ชื่อผู้ใช้สำหรับระบบ (unique)"]
   password varchar [not null, note: "รหัสผ่าน (hash)"]
   name varchar [not null, note: "ชื่อผู้ใช้"]
   status_id integer [not null, default: 1, ref: > status.id, note: "สถานะ (FK -> status.id)"]
@@ -20,6 +21,7 @@ Table user {
 
   Indexes {
     email [unique]
+    username [unique]
     status_id
   }
 }

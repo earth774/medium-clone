@@ -42,6 +42,7 @@ async function main() {
     update: {},
     create: {
       email: 'demo@medium.local',
+      username: 'demoauthor',
       password: 'Pass@word123',
       name: 'Demo Author',
       statusId: 1,

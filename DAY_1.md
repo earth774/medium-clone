@@ -117,7 +117,7 @@ export default function Header() {
 ### อธิบาย
 
 - **Status (`status`)** — 1=Active, 2=Inactive, 3=Deleted (ใช้ soft delete, เก็บใน table `status`)
-- **User (`user`)** — เก็บ id, email, password, name, `status_id`, `created_at`, `updated_at`
+- **User (`user`)** — เก็บ id, email (unique), username (unique), password, name, `status_id`, `created_at`, `updated_at`
 - **Article (`article`)** — เก็บ id, title, content, `user_id`, `status_id`, `created_at`, `updated_at`
 - **ArticleLike (`article_like`)** — เก็บการกด like ของ user ต่อบทความ, ใช้คู่ key (`user_id`, `article_id`) ให้ like ได้ครั้งเดียว
 - **Relation** — ทุก table ที่มี `status_id` จะชี้ไปที่ `status.id`
@@ -173,6 +173,7 @@ Table status {
 Table user {
   id varchar [primary key, not null, note: "รหัสผู้ใช้ (PK, CUID)"]
   email varchar [not null, unique, note: "อีเมล (unique)"]
+  username varchar [not null, unique, note: "ชื่อผู้ใช้สำหรับระบบ (unique)"]
   password varchar [not null, note: "รหัสผ่าน (hash)"]
   name varchar [not null, note: "ชื่อผู้ใช้"]
   status_id integer [not null, default: 1, ref: > status.id, note: "สถานะ (FK -> status.id)"]
@@ -181,6 +182,7 @@ Table user {
 
   Indexes {
     email [unique]
+    username [unique]
     status_id
   }
 }
@@ -279,6 +281,7 @@ model Status {
 model User {
   id        String        @id @default(cuid())
   email     String        @unique
+  username  String        @unique
   password  String
   name      String
   statusId  Int           @default(1) @map("status_id")
@@ -396,6 +399,7 @@ async function main() {
     update: {},
     create: {
       email: 'demo@medium.local',
+      username: 'demoauthor',
       password: 'Pass@word123',
       name: 'Demo Author',
       statusId: 1,
@@ -1174,6 +1178,7 @@ export default async function ArticlePage({ params }: Props) {
     update: {},
     create: {
       email: 'demo@medium.local',
+      username: 'demoauthor',
       password: 'Pass@word123',
       name: 'Demo Author',
       statusId: 1,
@@ -1531,7 +1536,7 @@ export default function LoginForm() {
 ### อธิบาย
 
 - **Route:** `app/(auth)/register/page.tsx` — ใช้ route group `(auth)` ตาม nextjs-core
-- **Design:** Card 400px, logo "Medium", title "Join Medium.", subtitle "Create your account.", ช่อง Full Name, Email, Password (มี Show/Hide), ปุ่ม Create account, ลิงก์ "Already have an account? Sign in"
+- **Design:** Card 400px, logo "Medium", title "Join Medium.", subtitle "Create your account.", ช่อง Full Name, Username, Email, Password (มี Show/Hide), ปุ่ม Create account, ลิงก์ "Already have an account? Sign in"
 - **Responsive:** Card `max-w-[400px]` บน mobile, padding ปรับตาม breakpoint (p-6 sm:p-10 sm:px-12 sm:py-10)
 - **UI only:** Form มี `preventDefault` — ยังไม่เชื่อม API หรือ session
 
@@ -1595,6 +1600,19 @@ export default function RegisterForm() {
           placeholder="Your name"
           className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
           autoComplete="name"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="username" className="text-[13px] font-medium text-text-1">
+          Username
+        </label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          placeholder="johndoe"
+          className="h-10 w-full px-3 border border-border rounded text-[15px] text-text-1 placeholder:text-text-3 bg-white focus:outline-none focus:border-primary"
+          autoComplete="username"
         />
       </div>
       <div className="flex flex-col gap-1">

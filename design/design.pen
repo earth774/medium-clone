@@ -4138,6 +4138,55 @@
             },
             {
               "type": "frame",
+              "id": "kTztw",
+              "name": "regUsernameGroup",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LPZHH",
+                  "name": "regUsernameLabel",
+                  "fill": "$color-text-1",
+                  "content": "Username",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "RHYyg",
+                  "name": "regUsernameField",
+                  "width": "fill_container",
+                  "height": 40,
+                  "stroke": {
+                    "align": "outside",
+                    "thickness": 1,
+                    "fill": "$color-border"
+                  },
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "K1h9i",
+                      "name": "regUsernameTxt",
+                      "fill": "$color-text-3",
+                      "content": "johndoe",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
               "id": "X3kh1",
               "name": "regEmailGroup",
               "width": "fill_container",
@@ -4750,18 +4799,89 @@
     {
       "type": "frame",
       "id": "r9H8G",
-      "x": 281.6615884422281,
-      "y": 30045.01936944719,
+      "x": 297,
+      "y": 30045,
       "name": "Page 6 — Edit Profile",
       "width": 840,
+      "height": 773,
       "fill": "$color-bg",
       "layout": "vertical",
-      "padding": [
-        64,
-        0
-      ],
+      "gap": 48,
       "alignItems": "center",
       "children": [
+        {
+          "type": "frame",
+          "id": "P8n6S",
+          "name": "navBar",
+          "width": "fill_container",
+          "height": 57,
+          "fill": "#FFFFFF",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$color-border"
+          },
+          "padding": [
+            0,
+            44
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "32kWo",
+              "name": "homeNavLogo",
+              "fill": "$color-text-1",
+              "content": "Medium",
+              "fontFamily": "Source Serif 4",
+              "fontSize": 24,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "n6Zbq",
+              "name": "homeNavRight",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ygRgk",
+                  "name": "writeNav",
+                  "fill": "$color-text-1",
+                  "content": "Write",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "pHjUt",
+                  "name": "homeAvatar",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$color-primary",
+                  "cornerRadius": 999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "4FEAu",
+                      "name": "homeAvatarTxt",
+                      "fill": "#FFFFFF",
+                      "content": "SC",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         {
           "type": "frame",
           "id": "DSjO0",
@@ -5854,7 +5974,7 @@
                       "id": "mnfAd",
                       "name": "nfBox6Title",
                       "fill": "$color-text-1",
-                      "content": "PROFILE  /@[user_id]",
+                      "content": "PROFILE  /@[username]",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "700"
@@ -5979,8 +6099,8 @@
     {
       "type": "frame",
       "id": "e6eAb",
-      "x": -1302.338411557772,
-      "y": 29235.01936944719,
+      "x": -1302,
+      "y": 29235,
       "name": "Navbar",
       "width": "fill_container(1280)",
       "height": 57,
