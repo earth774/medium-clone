@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function LoginForm() {
+type LoginFormProps = {
+  redirectTo?: string;
+};
+
+export default function LoginForm({ redirectTo = "/" }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +30,7 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       await axios.post("/api/auth/login", { email, password });
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
@@ -90,7 +94,14 @@ export default function LoginForm() {
       </button>
       <p className="text-center text-sm text-text-2">
         No account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
+        <Link
+          href={
+            redirectTo === "/"
+              ? "/register"
+              : `/register?redirect=${encodeURIComponent(redirectTo)}`
+          }
+          className="font-semibold text-primary hover:underline"
+        >
           Create one
         </Link>
       </p>

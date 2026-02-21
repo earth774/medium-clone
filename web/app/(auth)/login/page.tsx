@@ -9,10 +9,15 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{ registered?: string; redirect?: string }>;
 }) {
   const params = await searchParams;
   const showRegistered = params.registered === "1";
+  const rawRedirect = params.redirect ?? "/";
+  const redirectTo =
+    typeof rawRedirect === "string" && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/";
 
   return (
     <div className="min-h-[calc(100vh-57px-4rem)] flex flex-col items-center justify-center px-4 py-8 sm:py-12">
@@ -29,7 +34,7 @@ export default async function LoginPage({
             </p>
           )}
         </div>
-        <LoginForm />
+        <LoginForm redirectTo={redirectTo} />
       </div>
     </div>
   );

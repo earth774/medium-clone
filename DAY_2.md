@@ -20,7 +20,7 @@
 - **Register API** — รับ `name`, `email`, `password`, `username` (optional) — ถ้าไม่ส่ง username จะสร้างจากส่วนก่อน @ ของ email
 - **Validation** — ตรวจสอบ email format, ความยาวรหัสผ่าน (อย่างน้อย 8 ตัวอักษร), username format (a-z, 0-9, _ เท่านั้น)
 - **bcrypt** — ใช้ `bcryptjs` hash รหัสผ่านก่อน `prisma.user.create`
-- **Form** — เรียก `axios.post("/api/auth/register", { ... })` เมื่อกด Create account, redirect ไป `/login?registered=1` เมื่อสำเร็จ
+- **Form** — เรียก `axios.post("/api/auth/register", { ... })` เมื่อกด Create account, redirect ไป `/login?registered=1` (หรือ `/login?registered=1&redirect=<path>` ถ้ามี redirect param จาก Step 2.4)
 
 ### Backend
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 
 ```
 
-`**app/(auth)/register/RegisterForm.tsx`** — เชื่อม API (ใช้ axios)
+`**app/(auth)/register/RegisterForm.tsx`** — เชื่อม API (ใช้ axios) + redirect (Step 2.4)
 
 ```tsx
 "use client";
@@ -172,7 +172,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function RegisterForm() {
+type RegisterFormProps = { redirectTo?: string };
+
+export default function RegisterForm({ redirectTo = "/" }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -201,7 +203,11 @@ export default function RegisterForm() {
         email,
         password,
       });
-      router.push("/login?registered=1");
+      const loginUrl =
+        redirectTo === "/"
+          ? "/login?registered=1"
+          : `/login?registered=1&redirect=${encodeURIComponent(redirectTo)}`;
+      router.push(loginUrl);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
@@ -292,7 +298,14 @@ export default function RegisterForm() {
       </button>
       <p className="text-center text-sm text-text-2">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
+        <Link
+          href={
+            redirectTo === "/"
+              ? "/login"
+              : `/login?redirect=${encodeURIComponent(redirectTo)}`
+          }
+          className="font-semibold text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
@@ -301,6 +314,8 @@ export default function RegisterForm() {
 }
 
 ```
+
+หน้า `register/page.tsx` ต้องอ่าน `redirect` จาก `searchParams` validate path แล้วส่ง `redirectTo` ให้ `RegisterForm` — ดู Step 2.4
 
 ### คำสั่งที่ต้องรัน
 
@@ -328,7 +343,7 @@ export default function RegisterForm() {
 - **Login API** — รับ `email`, `password` — ตรวจสอบกับฐานข้อมูล ถ้าถูกต้องสร้าง session และ set cookie
 - **Session** — ใช้ `jose` สร้าง JWT เก็บใน httpOnly cookie ชื่อ `session` อายุ 7 วัน
 - **Validation** — ตรวจสอบ email และ password ไม่ว่าง, ถ้า email/password ไม่ถูกต้อง return 401 พร้อม `{ error: "Invalid email or password" }`
-- **Form** — เรียก `axios.post("/api/auth/login", { email, password })` เมื่อกด Sign in, redirect ไป `/` เมื่อสำเร็จ
+- **Form** — เรียก `axios.post("/api/auth/login", { email, password })` เมื่อกด Sign in, redirect ไป `/` (หรือ path จาก `redirect` param เมื่อมี Step 2.4) เมื่อสำเร็จ
 - **Header** — Layout ดึง session จาก cookie ส่งให้ Header แสดง Write, Profile avatar (ตัวอักษรแรกของชื่อ), Log out เมื่อ login แล้ว
 
 ### Backend
@@ -341,7 +356,7 @@ export default function RegisterForm() {
 
 ### Frontend
 
-1. อัปเดต `LoginForm.tsx` — ใช้ axios เรียก `POST /api/auth/login`, แสดง error จาก `err.response.data.error`, แสดง loading state บนปุ่ม Sign in, redirect ไป `/` และ `router.refresh()` เมื่อสำเร็จ
+1. อัปเดต `LoginForm.tsx` — ใช้ axios เรียก `POST /api/auth/login`, แสดง error จาก `err.response.data.error`, แสดง loading state บนปุ่ม Sign in, redirect ไป `/` (หรือ `redirectTo` จาก Step 2.4) และ `router.refresh()` เมื่อสำเร็จ
 2. อัปเดต `app/layout.tsx` — เรียก `getSession()` ส่ง `user` ให้ Header
 3. อัปเดต `Header.tsx` — รับ prop `user`, แสดง Write + Profile avatar + Log out เมื่อ `user` มีค่า, ปุ่ม Log out เรียก `POST /api/auth/logout` แล้ว `router.refresh()`
 
@@ -483,7 +498,7 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-`**app/(auth)/login/LoginForm.tsx`** — เชื่อม API
+`**app/(auth)/login/LoginForm.tsx`** — เชื่อม API + redirect (Step 2.4)
 
 ```tsx
 "use client";
@@ -493,7 +508,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function LoginForm() {
+type LoginFormProps = { redirectTo?: string };
+
+export default function LoginForm({ redirectTo = "/" }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -514,7 +531,7 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       await axios.post("/api/auth/login", { email, password });
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
@@ -578,7 +595,14 @@ export default function LoginForm() {
       </button>
       <p className="text-center text-sm text-text-2">
         No account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
+        <Link
+          href={
+            redirectTo === "/"
+              ? "/register"
+              : `/register?redirect=${encodeURIComponent(redirectTo)}`
+          }
+          className="font-semibold text-primary hover:underline"
+        >
           Create one
         </Link>
       </p>
@@ -586,6 +610,8 @@ export default function LoginForm() {
   );
 }
 ```
+
+หน้า `login/page.tsx` ต้องอ่าน `redirect` จาก `searchParams` validate path แล้วส่ง `redirectTo` ให้ `LoginForm` — ดู Step 2.4
 
 `**app/components/Header.tsx`** — เชื่อม API
 
@@ -1051,7 +1077,261 @@ export async function PATCH(request: NextRequest) {
 
 ### คำสั่งที่ต้องรัน
 
-| ลำดับ | คำสั่ง                                      | ทำอะไร                          |
-| ----- | ------------------------------------------- | ------------------------------- |
+
+| ลำดับ | คำสั่ง                                       | ทำอะไร                          |
+| ----- | -------------------------------------------- | ------------------------------- |
 | 1     | `npx prisma migrate dev --name add-user-bio` | สร้าง migration สำหรับฟิลด์ bio |
+
+
+---
+
+## Step 2.4 — Guard Route (Middleware ป้องกัน route ที่ต้องล็อกอิน)
+
+### ทำอะไร
+
+- สร้าง Next.js middleware สำหรับ guard route ที่ต้องล็อกอิน
+- redirect ผู้ใช้ที่ยังไม่ล็อกอินไป `/login?redirect=<path>` เมื่อพยายามเข้า `/write`, `/profile/edit`
+- redirect ผู้ใช้ที่ล็อกอินแล้วไป `/` (หรือ `redirect` param) เมื่อพยายามเข้า `/login`, `/register`
+
+### อธิบาย
+
+- **Protected routes** — `/write`, `/profile/edit` ต้องมี session ที่ valid ถ้าไม่มี redirect ไป `/login?redirect=<path>` เพื่อให้หลัง login แล้ว redirect กลับไปหน้าที่ต้องการ
+- **Auth routes** — `/login`, `/register` ถ้าผู้ใช้ล็อกอินแล้ว redirect ไป `/` หรือไป path ที่ระบุใน query `redirect`
+- **Session verification** — ใช้ `jose` (jwtVerify) ตรวจสอบ JWT ใน cookie ชื่อ `session` เพราะ middleware รันบน Edge Runtime ต้องใช้ library ที่รองรับ Web Crypto API
+- **Matcher** — กำหนด `config.matcher` ให้ middleware รันเฉพาะ path ที่เกี่ยวข้อง เพื่อลด overhead
+
+### Backend
+
+1. สร้าง `middleware.ts` ที่ root ของโปรเจกต์ (ระดับเดียวกับ `app/`)
+2. ใช้ `jwtVerify` จาก `jose` ตรวจสอบ session cookie
+3. กำหนด `PROTECTED_PATHS` และ `AUTH_PATHS` เป็น array
+4. ใช้ `NextResponse.redirect()` สำหรับ redirect
+
+### Code
+
+`**middleware.ts`** — Guard route
+
+```ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
+
+const SESSION_COOKIE = "session";
+
+const PROTECTED_PATHS = ["/write", "/profile/edit"];
+const AUTH_PATHS = ["/login", "/register"];
+
+function getSecret(): Uint8Array {
+  const secret =
+    process.env.AUTH_SECRET ||
+    process.env.CRYPTO_SECRET ||
+    "dev-secret-change-in-production";
+  return new TextEncoder().encode(secret);
+}
+
+async function hasValidSession(request: NextRequest): Promise<boolean> {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return false;
+  try {
+    await jwtVerify(token, getSecret(), { algorithms: ["HS256"] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+function isAuthPath(pathname: string): boolean {
+  return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const loggedIn = await hasValidSession(request);
+
+  if (isProtectedPath(pathname) && !loggedIn) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (isAuthPath(pathname) && loggedIn) {
+    const redirectTo = request.nextUrl.searchParams.get("redirect") || "/";
+    return NextResponse.redirect(new URL(redirectTo, request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/write/:path*",
+    "/profile/edit/:path*",
+    "/login",
+    "/register",
+  ],
+};
+```
+
+### การทำงาน
+
+
+| สถานะผู้ใช้ | Path ที่เข้า    | ผลลัพธ์                                    |
+| ----------- | --------------- | ------------------------------------------ |
+| ไม่ล็อกอิน  | `/write`        | redirect → `/login?redirect=/write`        |
+| ไม่ล็อกอิน  | `/profile/edit` | redirect → `/login?redirect=/profile/edit` |
+| ล็อกอินแล้ว | `/login`        | redirect → `/` (หรือ `redirect` param)     |
+| ล็อกอินแล้ว | `/register`     | redirect → `/`                             |
+| ไม่ล็อกอิน  | `/login`        | ผ่าน (แสดงหน้า login)                      |
+| ล็อกอินแล้ว | `/write`        | ผ่าน (แสดงหน้า write)                      |
+
+
+### คำสั่งที่ต้องรัน
+
+ไม่ต้องติดตั้ง package เพิ่ม — ใช้ `jose` ที่มีอยู่แล้วจาก Step 2.2
+
+### Frontend (เชื่อม redirect กับ Login, Register, Edit Profile)
+
+**Login**
+
+`**app/(auth)/login/page.tsx`** — อ่าน redirect จาก searchParams, validate path
+
+```tsx
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ registered?: string; redirect?: string }>;
+}) {
+  const params = await searchParams;
+  const showRegistered = params.registered === "1";
+  const rawRedirect = params.redirect ?? "/";
+  const redirectTo =
+    typeof rawRedirect === "string" && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/";
+
+  return (
+    // ...
+    <LoginForm redirectTo={redirectTo} />
+  );
+}
+```
+
+`**app/(auth)/login/LoginForm.tsx`** — รับ `redirectTo`, หลัง login สำเร็จ redirect ไป path นั้น, ลิงก์ "Create one" ส่ง redirect ต่อ
+
+```tsx
+type LoginFormProps = { redirectTo?: string };
+
+export default function LoginForm({ redirectTo = "/" }: LoginFormProps) {
+  // ...
+  router.push(redirectTo);  // แทน router.push("/")
+  // ...
+  <Link
+    href={
+      redirectTo === "/"
+        ? "/register"
+        : `/register?redirect=${encodeURIComponent(redirectTo)}`
+    }
+  >
+    Create one
+  </Link>
+}
+```
+
+**Register**
+
+`**app/(auth)/register/page.tsx`** — อ่าน redirect จาก searchParams, validate ด้วย safeRedirect
+
+```tsx
+function safeRedirect(path: string | undefined): string {
+  if (typeof path !== "string" || !path.startsWith("/") || path.startsWith("//")) {
+    return "/";
+  }
+  return path;
+}
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
+  const params = await searchParams;
+  const redirectTo = safeRedirect(params.redirect);
+
+  return (
+    // ...
+    <RegisterForm redirectTo={redirectTo} />
+  );
+}
+```
+
+`**app/(auth)/register/RegisterForm.tsx`** — รับ `redirectTo`, หลังสมัครสำเร็จ redirect ไป login พร้อม redirect param, ลิงก์ "Sign in" ส่ง redirect ต่อ
+
+```tsx
+type RegisterFormProps = { redirectTo?: string };
+
+export default function RegisterForm({ redirectTo = "/" }: RegisterFormProps) {
+  // ...
+  const loginUrl =
+    redirectTo === "/"
+      ? "/login?registered=1"
+      : `/login?registered=1&redirect=${encodeURIComponent(redirectTo)}`;
+  router.push(loginUrl);
+  // ...
+  <Link
+    href={
+      redirectTo === "/"
+        ? "/login"
+        : `/login?redirect=${encodeURIComponent(redirectTo)}`
+    }
+  >
+    Sign in
+  </Link>
+}
+```
+
+**Edit Profile**
+
+`**app/profile/edit/page.tsx`** — เมื่อ GET /api/profile ได้ 401 redirect ไป login พร้อม redirect
+
+```tsx
+useEffect(() => {
+  async function fetchProfile() {
+    try {
+      const res = await axios.get("/api/profile");
+      // ...
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        router.push("/login?redirect=/profile/edit");
+        return;
+      }
+      setProfileError("Failed to load profile");
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }
+  fetchProfile();
+}, [router]);
+```
+
+### Flow การ redirect ข้ามหน้า
+
+
+| ขั้นตอน                               | ผลลัพธ์                                      |
+| ------------------------------------- | -------------------------------------------- |
+| เข้า `/write` โดยไม่ล็อกอิน           | Middleware → `/login?redirect=/write`        |
+| กด "Create one" บนหน้า login          | ไป `/register?redirect=/write`               |
+| สมัครสำเร็จ                           | ไป `/login?registered=1&redirect=/write`     |
+| Login สำเร็จ                          | ไป `/write`                                  |
+| กด "Sign in" บนหน้า register          | ไป `/login?redirect=/write`                  |
+| เข้า `/profile/edit` โดยไม่ล็อกอิน    | Middleware → `/login?redirect=/profile/edit` |
+| API profile ได้ 401 (session หมดอายุ) | redirect → `/login?redirect=/profile/edit`   |
+
+
+### หมายเหตุ
+
+- Middleware รันบน **Edge Runtime** — ใช้ `jose` แทน `jsonwebtoken` เพราะ Edge ไม่รองรับ Node.js crypto
 

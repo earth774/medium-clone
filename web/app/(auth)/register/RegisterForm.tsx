@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function RegisterForm() {
+type RegisterFormProps = {
+  redirectTo?: string;
+};
+
+export default function RegisterForm({ redirectTo = "/" }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +38,11 @@ export default function RegisterForm() {
         email,
         password,
       });
-      router.push("/login?registered=1");
+      const loginUrl =
+        redirectTo === "/"
+          ? "/login?registered=1"
+          : `/login?registered=1&redirect=${encodeURIComponent(redirectTo)}`;
+      router.push(loginUrl);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
@@ -125,7 +133,14 @@ export default function RegisterForm() {
       </button>
       <p className="text-center text-sm text-text-2">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
+        <Link
+          href={
+            redirectTo === "/"
+              ? "/login"
+              : `/login?redirect=${encodeURIComponent(redirectTo)}`
+          }
+          className="font-semibold text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
