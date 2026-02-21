@@ -776,3 +776,282 @@ export default function Header({ user }: HeaderProps) {
 
 - `AUTH_SECRET` หรือ `CRYPTO_SECRET` — ใช้สำหรับ sign JWT (production ควรตั้งค่าให้ปลอดภัย)
 
+---
+
+## Step 2.3 — Edit Profile API และเชื่อมต่อ Form
+
+### ทำอะไร
+
+- เพิ่มฟิลด์ `bio` ใน User model
+- สร้าง API `GET /api/profile` สำหรับดึงข้อมูลโปรไฟล์ของผู้ใช้ที่ล็อกอิน
+- สร้าง API `PATCH /api/profile` สำหรับแก้ไข name, username, bio
+- สร้าง API `PATCH /api/profile/password` สำหรับเปลี่ยนรหัสผ่าน
+- เชื่อม Edit Profile page กับ API
+- แสดง error, success และ loading state
+
+### อธิบาย
+
+- **GET /api/profile** — ต้องล็อกอิน ใช้ session ตรวจสอบ identity แล้วดึงข้อมูล user จาก DB (id, name, email, username, bio)
+- **PATCH /api/profile** — รับ `name`, `username` (optional), `bio` (optional) — validate username format (a-z, 0-9, _), ตรวจสอบ username ซ้ำ (ยกเว้นของตัวเอง), อัปเดต session cookie เมื่อ name/username เปลี่ยน
+- **PATCH /api/profile/password** — รับ `currentPassword`, `newPassword` — ตรวจสอบ current password ด้วย bcrypt, hash new password ก่อนบันทึก
+- **Edit Profile page** — โหลดข้อมูลจาก GET /api/profile เมื่อ mount, redirect ไป `/login?redirect=/profile/edit` ถ้า 401, กด Save changes เรียก PATCH /api/profile, กด Update password เรียก PATCH /api/profile/password
+
+### Backend
+
+1. เพิ่ม `bio` (optional, String?) ใน Prisma schema และ schema.dbml
+2. รัน `npx prisma migrate dev --name add-user-bio`
+3. สร้าง `app/api/profile/route.ts` — GET (ดึง profile), PATCH (อัปเดต name, username, bio)
+4. สร้าง `app/api/profile/password/route.ts` — PATCH (เปลี่ยนรหัสผ่าน)
+
+### Frontend
+
+1. อัปเดต `app/profile/edit/page.tsx` — ใช้ axios เรียก GET /api/profile ใน useEffect โหลดข้อมูล, แสดง loading state, redirect ถ้า 401
+2. ปุ่ม Save changes — เรียก PATCH /api/profile พร้อม name, username, bio, แสดง error/success, loading state
+3. ปุ่ม Update password — เรียก PATCH /api/profile/password พร้อม currentPassword, newPassword, ตรวจสอบ confirm password ตรงกันก่อนส่ง, แสดง error/success, loading state
+
+### Code
+
+`**prisma/schema.prisma`** — เพิ่ม bio
+
+```prisma
+model User {
+  ...
+  name      String
+  bio       String?       @db.Text
+  statusId  Int           @default(1) @map("status_id")
+  ...
+}
+```
+
+`**app/api/profile/route.ts`**
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { createSession, setSessionCookie } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+const BIO_MAX = 160;
+const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
+
+function slugFromUsername(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId, statusId: 1 },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      username: true,
+      bio: true,
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      bio: user.bio ?? "",
+    },
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { name, username: rawUsername, bio } = body;
+
+    const nameStr = typeof name === "string" ? name.trim() : "";
+    const bioStr = typeof bio === "string" ? bio.trim().slice(0, BIO_MAX) : undefined;
+    const username = rawUsername
+      ? slugFromUsername(String(rawUsername))
+      : undefined;
+
+    if (!nameStr) {
+      return NextResponse.json(
+        { error: "Name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (username !== undefined) {
+      if (!USERNAME_PATTERN.test(username) || username.length < 2) {
+        return NextResponse.json(
+          {
+            error:
+              "Username must be 2+ characters, letters, numbers, underscores only",
+          },
+          { status: 400 }
+        );
+      }
+
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username,
+          id: { not: session.userId },
+        },
+      });
+
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: "Username is already taken" },
+          { status: 409 }
+        );
+      }
+    }
+
+    const updateData: { name: string; username?: string; bio?: string } = {
+      name: nameStr,
+    };
+    if (username !== undefined) updateData.username = username;
+    if (bioStr !== undefined) updateData.bio = bioStr;
+
+    const user = await prisma.user.update({
+      where: { id: session.userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        bio: true,
+      },
+    });
+
+    const newToken = await createSession({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      username: user.username,
+    });
+    await setSessionCookie(newToken);
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        bio: user.bio ?? "",
+      },
+    });
+  } catch (error) {
+    console.error("PATCH /api/profile error:", error);
+    return NextResponse.json(
+      { error: "Failed to update profile" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+`**app/api/profile/password/route.ts`**
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+const MIN_PASSWORD_LENGTH = 8;
+
+export async function PATCH(request: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { currentPassword, newPassword } = body;
+
+    const currentStr = typeof currentPassword === "string" ? currentPassword : "";
+    const newStr = typeof newPassword === "string" ? newPassword : "";
+
+    if (!currentStr) {
+      return NextResponse.json(
+        { error: "Current password is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!newStr || newStr.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const valid = await bcrypt.compare(currentStr, user.password);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Current password is incorrect" },
+        { status: 401 }
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(newStr, 10);
+
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: { password: hashedPassword },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("PATCH /api/profile/password error:", error);
+    return NextResponse.json(
+      { error: "Failed to update password" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+`**app/profile/edit/page.tsx`** — เชื่อม API
+
+- ใช้ `useEffect` โหลด profile จาก GET /api/profile
+- redirect ไป `/login?redirect=/profile/edit` เมื่อได้ 401
+- ปุ่ม Save changes เรียก PATCH /api/profile พร้อม name, username, bio
+- ปุ่ม Update password เรียก PATCH /api/profile/password พร้อม currentPassword, newPassword
+- แสดง error, success message และ loading state บนปุ่ม
+
+### คำสั่งที่ต้องรัน
+
+| ลำดับ | คำสั่ง                                      | ทำอะไร                          |
+| ----- | ------------------------------------------- | ------------------------------- |
+| 1     | `npx prisma migrate dev --name add-user-bio` | สร้าง migration สำหรับฟิลด์ bio |
+

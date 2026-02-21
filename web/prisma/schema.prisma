@@ -32,6 +32,7 @@ model User {
   username  String        @unique
   password  String
   name      String
+  bio       String?       @db.Text
   statusId  Int           @default(1) @map("status_id")
   status    Status        @relation(fields: [statusId], references: [id])
   createdAt DateTime      @default(now()) @map("created_at")
