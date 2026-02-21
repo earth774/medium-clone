@@ -9,24 +9,28 @@
 ## Step 1.1 — Setup โปรเจกต์
 
 ### ทำอะไร
+
 - สร้างโปรเจกต์ Next.js 14 ด้วย App Router
 - ติดตั้ง Prisma และเชื่อมต่อ PostgreSQL
 - ติดตั้ง Tailwind CSS
 - สร้าง Layout พื้นฐาน (Header, Navigation)
 
 ### อธิบาย
+
 - **Next.js 14 App Router** — โครงสร้างใหม่ใช้โฟลเดอร์ `app/` แทน `pages/` รองรับ Server Components, Layouts, และ API Routes
 - **Prisma** — ORM ที่ช่วยเขียน query แบบ type-safe และจัดการ migration
 - **PostgreSQL** — ฐานข้อมูลที่ต้อง setup server รันได้ทันที เหมาะกับ development
 - **Layout** — ใช้ `app/layout.tsx` เป็น root layout แสดง Header/Nav ซ้ำทุกหน้า
 
 ### Backend
+
 1. `npx create-next-app@latest` เลือก App Router, Tailwind, TypeScript
 2. `npm install prisma @prisma/client`
 3. `npx prisma init`
 4. แก้ `DATABASE_URL` ใน `.env` เป็น `postgresql://localhost:5432/medium` (PostgreSQL — ไม่ต้อง setup อะไรเพิ่ม)
 
 ### Frontend
+
 1. สร้าง `app/layout.tsx` — ใส่ `<html>`, `<body>`, font (เช่น Inter)
 2. สร้าง `components/Header.tsx` — logo, ลิงก์ไป `/`, `/login`, `/register`
 3. สร้าง `components/Nav.tsx` — เมนูนำทาง (ถ้าแยกจาก Header)
@@ -34,7 +38,8 @@
 
 ### Code (Theme: ขาวดำ minimal)
 
-**`app/layout.tsx`** — ใส่ `suppressHydrationWarning` ที่ html/body เพื่อลด hydration warning จาก browser extensions
+`**app/layout.tsx`** — ใส่ `suppressHydrationWarning` ที่ html/body เพื่อลด hydration warning จาก browser extensions
+
 ```tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -67,9 +72,10 @@ export default function RootLayout({
 }
 ```
 
-**`components/Header.tsx`** (เมื่อ login แสดง Profile, ตั้งค่า, ชื่อ user, Logout)
+`**components/Header.tsx**` (เมื่อ login แสดง Profile, ตั้งค่า, ชื่อ user, Logout)
 
 ⚠️ **Hydration fix:** ใช้ `mounted` state — แสดง Login/Register ก่อน mount เพื่อให้ server/client render เหมือนกัน แล้วค่อยอ่าน localStorage
+
 ```tsx
 'use client'
 
@@ -101,6 +107,7 @@ export default function Header() {
 ## Step 1.2 — Database schema + Status + DBML
 
 ### ทำอะไร
+
 - ออกแบบ schema ใน `prisma/schema.prisma` ให้ตรงกับแบบจำลองใน `schema.dbml`
 - สร้าง tables/models: `status`, `user`, `article`, `article_like` (สำหรับ Like ใน DAY_2)
 - รัน migration และ seed ตาราง `status`
@@ -108,6 +115,7 @@ export default function Header() {
 - เขียน `schema.dbml` เป็นเอกสารโครงสร้าง DB แบบ DBML (ไฟล์หลักอ้างอิงโครงสร้าง)
 
 ### อธิบาย
+
 - **Status (`status`)** — 1=Active, 2=Inactive, 3=Deleted (ใช้ soft delete, เก็บใน table `status`)
 - **User (`user`)** — เก็บ id, email, password, name, `status_id`, `created_at`, `updated_at`
 - **Article (`article`)** — เก็บ id, title, content, `user_id`, `status_id`, `created_at`, `updated_at`
@@ -116,6 +124,7 @@ export default function Header() {
 - **schema.dbml** — ไฟล์ DBML ใช้ดูโครงสร้างตารางและความสัมพันธ์ (source of truth ของโครงสร้าง DB)
 
 ### Backend
+
 1. เขียน schema ใน `prisma/schema.prisma` ตามแบบ `schema.dbml`
 2. สร้าง `.env` มี `DATABASE_URL="file:./dev.db"`
 3. สร้าง `lib/prisma.ts` — export PrismaClient singleton
@@ -126,24 +135,29 @@ export default function Header() {
 
 รันตามลำดับ:
 
-| ลำดับ | คำสั่ง | ทำอะไร |
-|-------|--------|--------|
-| 1 | `npx prisma generate` | สร้าง Prisma Client จาก schema (ต้องรันทุกครั้งที่แก้ schema) |
-| 2 | `npx prisma migrate dev --name init` | สร้าง migration + ตารางใน DB (ครั้งแรกใช้ `--name init`) |
-| 3 | `npx prisma db seed` | รัน seed ใส่ข้อมูลตาราง `status` (1 Active, 2 Inactive, 3 Deleted) |
+
+| ลำดับ | คำสั่ง                               | ทำอะไร                                                             |
+| ----- | ------------------------------------ | ------------------------------------------------------------------ |
+| 1     | `npx prisma generate`                | สร้าง Prisma Client จาก schema (ต้องรันทุกครั้งที่แก้ schema)      |
+| 2     | `npx prisma migrate dev --name init` | สร้าง migration + ตารางใน DB (ครั้งแรกใช้ `--name init`)           |
+| 3     | `npx prisma db seed`                 | รัน seed ใส่ข้อมูลตาราง `status` (1 Active, 2 Inactive, 3 Deleted) |
+
 
 **หมายเหตุ**
+
 - ก่อนรัน `db seed` ต้องตั้งค่าใน `package.json`: `"prisma": { "seed": "npx tsx prisma/seed.ts" }` และติดตั้ง tsx (`npm i -D tsx`) — แนะนำใช้ tsx เพราะรองรับ ESM และ custom output ของ Prisma ได้ดี
 - ถ้า schema กำหนด `output` เป็น path อื่น (เช่น `../app/generated/prisma`) ใน `prisma/seed.ts` ต้อง import จาก path นั้น ไม่ใช่ `@prisma/client` (เช่น `import { PrismaClient } from '../app/generated/prisma/client'`)
 - แก้ `schema.prisma` แล้วต้องรัน `npx prisma generate` ใหม่
 - มี migration เพิ่มในครั้งถัดไป: ใช้ `npx prisma migrate dev --name <ชื่อการเปลี่ยนแปลง>`
 
 ### Frontend
+
 - Step นี้เป็น backend เป็นหลัก — ยังไม่ต้องทำ UI เพิ่ม
 
 ### Code
 
-**`schema.dbml`**
+`**schema.dbml`**
+
 ```dbml
 // ============================================
 // Medium Clone — Database Schema (DBML)
@@ -237,7 +251,8 @@ Table article_like {
 
 ```
 
-**`prisma/schema.prisma` (เฉพาะส่วน model)**  
+`**prisma/schema.prisma` (เฉพาะส่วน model)**  
+
 ```prisma
 generator client {
   provider = "prisma-client"
@@ -334,7 +349,8 @@ model ArticleLike {
 }
 ```
 
-**`prisma/seed.ts`**
+`**prisma/seed.ts**`
+
 ```ts
 import { prisma } from '../lib/prisma'
 
@@ -426,13 +442,13 @@ main()
 
 ```
 
-**`lib/prisma.ts`**
+`**lib/prisma.ts**`
 
 ใช้แบบ **singleton** — สร้าง Prisma Client แค่ instance เดียว แล้ว reuse ตลอดทั้ง app  
 
 - **เหตุผล:** ในโหมด development เวลา hot reload (เช่น Next.js) ถ้า `new PrismaClient()` ถูกเรียกหลายครั้ง จะมี connection ไปที่ DB เยอะจนเกิน limit ได้  
 - **วิธีทำ:** เก็บ instance ไว้ใน `globalThis` (ใน Node/Edge ไม่หายเมื่อไฟล์ถูกโหลดใหม่) ถ้ามีอยู่แล้วใช้ตัวเดิม ไม่มีค่อยสร้างใหม่  
-- **production:** มักโหลดครั้งเดียว จึงไม่จำเป็นต้องเก็บใน global ก็ได้ แต่ใช้ pattern เดียวกันได้ไม่มีปัญหา  
+- **production:** มักโหลดครั้งเดียว จึงไม่จำเป็นต้องเก็บใน global ก็ได้ แต่ใช้ pattern เดียวกันได้ไม่มีปัญหา
 
 ```ts
 import { PrismaClient } from '@prisma/client'
@@ -449,6 +465,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 ## Step 1.3 — Articles API + Feed
 
 ### ทำอะไร
+
 - สร้าง API `GET /api/articles` สำหรับดึงรายการบทความแบบ pagination
 - สร้างหน้า Feed (Home) แสดงรายการบทความจาก DB
 - สร้างหน้ารายละเอียดบทความ `/articles/[id]`
@@ -457,6 +474,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 - เพิ่ม seed ข้อมูล demo user และบทความตัวอย่าง
 
 ### อธิบาย
+
 - **GET /api/articles** — คืนรายการบทความที่ status = Active เรียงตามวันที่ใหม่สุด รองรับ `page` และ `limit` query params
 - **Feed** — หน้าแรกดึงบทความจาก API `GET /api/articles` ด้วย axios (Client Component) แสดง excerpt, ชื่อผู้เขียน, read time, like count
 - **Article detail** — หน้ารายละเอียดแสดง title, content (HTML), ผู้เขียน, วันที่
@@ -464,7 +482,9 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 - **estimateReadTime** — ประมาณเวลาอ่านจากจำนวนคำ (200 คำ/นาที)
 
 ### Path หมายเหตุ
+
 โปรเจกต์ใช้ `web/` เป็น Next.js root ดังนั้น:
+
 - **จาก project root:** `web/app/...`, `web/prisma/...`
 - **จากโฟลเดอร์ web/:** `app/...`, `prisma/...`
 
@@ -499,61 +519,72 @@ flowchart TD
     C6 --> D1 --> D2
 ```
 
+
+
 ---
 
 ### Phase 0 — Foundation (Design System)
 
 ทำก่อนเพื่อให้ Feed และ components ใช้ design tokens ได้
 
-| ลำดับ | ขั้นตอน | รายละเอียด |
-|-------|---------|------------|
-| 1 | globals.css | เพิ่ม CSS variables: `--color-bg`, `--color-border`, `--color-primary`, `--color-text-1/2/3`, `--color-surface`, `--color-like`, `--font-serif`, `.font-logo` |
-| 2 | layout.tsx | ใส่ Source Serif 4 font, metadata (title, description), main container `max-w-[1024px]` |
-| 3 | Header.tsx | Mobile hamburger menu, responsive nav (desktop / mobile), `isLoggedIn` placeholder |
+
+| ลำดับ | ขั้นตอน     | รายละเอียด                                                                                                                                                    |
+| ----- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | globals.css | เพิ่ม CSS variables: `--color-bg`, `--color-border`, `--color-primary`, `--color-text-1/2/3`, `--color-surface`, `--color-like`, `--font-serif`, `.font-logo` |
+| 2     | layout.tsx  | ใส่ Source Serif 4 font, metadata (title, description), main container `max-w-[1024px]`                                                                       |
+| 3     | Header.tsx  | Mobile hamburger menu, responsive nav (desktop / mobile), `isLoggedIn` placeholder                                                                            |
+
 
 ---
 
 ### Phase 1 — Backend
 
-| ลำดับ | ขั้นตอน | รายละเอียด |
-|-------|---------|------------|
-| 1 | สร้าง API route | สร้างไฟล์ `app/api/articles/route.ts` |
-| 2 | เขียน GET handler | รับ `page`, `limit` จาก query string (default: page=1, limit=10) |
-| 3 | Query Prisma | `prisma.article.findMany` โดย `where: { statusId: 1 }`, `include: { author, _count: { likes } }`, `orderBy: { createdAt: 'desc' }` |
-| 4 | คำนวณ pagination | ใช้ `skip`, `take` และ `prisma.article.count` สำหรับ total |
-| 5 | สร้าง helper functions | `excerptFromContent(content, 150)` — ตัด HTML, `estimateReadTime(content)` — ประมาณนาที |
-| 6 | Error handling | ห่อ logic ด้วย try/catch, return 500 + `{ error: "Failed to fetch articles" }` เมื่อ error |
-| 7 | Return JSON | `{ items, pagination: { page, limit, total, totalPages } }` — แต่ละ item มี id, title, excerpt, author, publishedAt, readTimeMinutes, likeCount |
-| 8 | อัปเดต seed | ใน `prisma/seed.ts` เพิ่ม demo user และบทความตัวอย่าง 3 รายการ (เนื้อหายาวพอสำหรับ excerpt/readTime) |
+
+| ลำดับ | ขั้นตอน                | รายละเอียด                                                                                                                                      |
+| ----- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | สร้าง API route        | สร้างไฟล์ `app/api/articles/route.ts`                                                                                                           |
+| 2     | เขียน GET handler      | รับ `page`, `limit` จาก query string (default: page=1, limit=10)                                                                                |
+| 3     | Query Prisma           | `prisma.article.findMany` โดย `where: { statusId: 1 }`, `include: { author, _count: { likes } }`, `orderBy: { createdAt: 'desc' }`              |
+| 4     | คำนวณ pagination       | ใช้ `skip`, `take` และ `prisma.article.count` สำหรับ total                                                                                      |
+| 5     | สร้าง helper functions | `excerptFromContent(content, 150)` — ตัด HTML, `estimateReadTime(content)` — ประมาณนาที                                                         |
+| 6     | Error handling         | ห่อ logic ด้วย try/catch, return 500 + `{ error: "Failed to fetch articles" }` เมื่อ error                                                      |
+| 7     | Return JSON            | `{ items, pagination: { page, limit, total, totalPages } }` — แต่ละ item มี id, title, excerpt, author, publishedAt, readTimeMinutes, likeCount |
+| 8     | อัปเดต seed            | ใน `prisma/seed.ts` เพิ่ม demo user และบทความตัวอย่าง 3 รายการ (เนื้อหายาวพอสำหรับ excerpt/readTime)                                            |
+
 
 ---
 
 ### Phase 2 — Frontend
 
-| ลำดับ | ขั้นตอน | รายละเอียด |
-|-------|---------|------------|
-| 1 | ติดตั้ง dependencies | `npm install axios lucide-react` — axios สำหรับเรียก API, lucide-react สำหรับ Heart, Bookmark icons |
-| 2 | สร้าง ArticleCard | Component แสดง title, excerpt, author (initials avatar), read time, like count, category chip, bookmark button |
-| 3 | สร้าง Sidebar | Popular Articles (placeholder), Recommended topics, Footer links, sticky layout บน desktop |
-| 4 | แก้ไข Home page | `app/page.tsx` — Client Component เรียก `axios.get('/api/articles')` ใน useEffect, แสดง loading/error state |
-| 5 | สร้าง article detail route | `app/articles/[id]/page.tsx` — Server Component ดึงบทความจาก Prisma, แสดง title + content |
-| 6 | สร้าง loading.tsx | Skeleton loading สำหรับ Feed (animate-pulse) |
-| 7 | จัด layout | Feed ซ้าย + Sidebar ขวา (flex, responsive) |
+
+| ลำดับ | ขั้นตอน                    | รายละเอียด                                                                                                     |
+| ----- | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1     | ติดตั้ง dependencies       | `npm install axios lucide-react` — axios สำหรับเรียก API, lucide-react สำหรับ Heart, Bookmark icons            |
+| 2     | สร้าง ArticleCard          | Component แสดง title, excerpt, author (initials avatar), read time, like count, category chip, bookmark button |
+| 3     | สร้าง Sidebar              | Popular Articles (placeholder), Recommended topics, Footer links, sticky layout บน desktop                     |
+| 4     | แก้ไข Home page            | `app/page.tsx` — Client Component เรียก `axios.get('/api/articles')` ใน useEffect, แสดง loading/error state    |
+| 5     | สร้าง article detail route | `app/articles/[id]/page.tsx` — Server Component ดึงบทความจาก Prisma, แสดง title + content                      |
+| 6     | สร้าง loading.tsx          | Skeleton loading สำหรับ Feed (animate-pulse)                                                                   |
+| 7     | จัด layout                 | Feed ซ้าย + Sidebar ขวา (flex, responsive)                                                                     |
+
 
 ---
 
 ### Phase 3 — คำสั่งที่ต้องรัน
 
-| ลำดับ | คำสั่ง | ทำอะไร |
-|-------|--------|--------|
-| 1 | `cd web && npm install axios lucide-react` | ติดตั้ง dependencies |
-| 2 | `npx prisma db seed` | รัน seed ใหม่เพื่อใส่ demo user และบทความ (หลังแก้ seed.ts) — รันจากโฟลเดอร์ `web/` |
+
+| ลำดับ | คำสั่ง                                     | ทำอะไร                                                                              |
+| ----- | ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| 1     | `cd web && npm install axios lucide-react` | ติดตั้ง dependencies                                                                |
+| 2     | `npx prisma db seed`                       | รัน seed ใหม่เพื่อใส่ demo user และบทความ (หลังแก้ seed.ts) — รันจากโฟลเดอร์ `web/` |
+
 
 ---
 
 ### Code
 
-**`app/globals.css`** — Design variables (Phase 0)
+`**app/globals.css**` — Design variables (Phase 0)
+
 ```css
 @import "tailwindcss";
 
@@ -598,7 +629,8 @@ body {
 }
 ```
 
-**`app/layout.tsx`** — Fonts + metadata (Phase 0)
+`**app/layout.tsx**` — Fonts + metadata (Phase 0)
+
 ```tsx
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
@@ -635,7 +667,8 @@ export default function RootLayout({
 }
 ```
 
-**`app/components/Header.tsx`** — Responsive nav (Phase 0)
+`**app/components/Header.tsx**` — Responsive nav (Phase 0)
+
 ```tsx
 "use client";
 
@@ -687,7 +720,8 @@ export default function Header() {
 }
 ```
 
-**`app/api/articles/route.ts`** — GET articles with pagination
+`**app/api/articles/route.ts**` — GET articles with pagination
+
 ```ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -745,7 +779,8 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-**`app/page.tsx`** — Feed (Home) — เรียก API ด้วย axios
+`**app/page.tsx**` — Feed (Home) — เรียก API ด้วย axios
+
 ```tsx
 "use client";
 
@@ -851,7 +886,8 @@ export default function HomePage() {
 }
 ```
 
-**`app/articles/[id]/CommentSection.tsx`** — Comment section (Client Component)
+`**app/articles/[id]/CommentSection.tsx**` — Comment section (Client Component)
+
 ```tsx
 "use client";
 
@@ -961,7 +997,8 @@ export function CommentSection() {
 
 ```
 
-**`app/articles/[id]/page.tsx`** — Article detail (Server Component)
+`**app/articles/[id]/page.tsx**` — Article detail (Server Component)
+
 ```tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -1128,7 +1165,8 @@ export default async function ArticlePage({ params }: Props) {
 }
 ```
 
-**`prisma/seed.ts`** — เพิ่ม demo user และ articles (ต่อจากส่วน status + categories)
+`**prisma/seed.ts**` — เพิ่ม demo user และ articles (ต่อจากส่วน status + categories)
+
 ```ts
   // Seed demo user and articles for Feed (Step 1.3)
   const demoUser = await prisma.user.upsert({
@@ -1166,7 +1204,8 @@ export default async function ArticlePage({ params }: Props) {
   }
 ```
 
-**`app/components/ArticleCard.tsx`** — Article card component
+`**app/components/ArticleCard.tsx**` — Article card component
+
 ```tsx
 import Link from "next/link";
 import { Heart, Bookmark } from "lucide-react";
@@ -1223,7 +1262,8 @@ export default function ArticleCard({
 }
 ```
 
-**`app/components/Sidebar.tsx`** — Sidebar component
+`**app/components/Sidebar.tsx**` — Sidebar component
+
 ```tsx
 import Link from "next/link";
 
@@ -1294,7 +1334,8 @@ export default function Sidebar() {
 }
 ```
 
-**`app/loading.tsx`** — Skeleton loading สำหรับ Feed
+`**app/loading.tsx**` — Skeleton loading สำหรับ Feed
+
 ```tsx
 export default function Loading() {
   return (
@@ -1364,11 +1405,13 @@ if (process.env.NODE_ENV !== 'production') {
 ## Step 1.4 — Login Page UI
 
 ### ทำอะไร
+
 - สร้างหน้า Login (`/login`) ตาม design ใน design.pen (node p3K9Q — Page 3 Sign In)
 - เฉพาะส่วน UI Design — ไม่มี logic auth จริง
 - รองรับ responsive (mobile, tablet, desktop)
 
 ### อธิบาย
+
 - **Route:** `app/(auth)/login/page.tsx` — ใช้ route group `(auth)` ตาม nextjs-core
 - **Design:** Card 400px, logo "Medium", title "Welcome back.", subtitle "Sign in with your email.", ช่อง Email, Password (มี Show/Hide), ปุ่ม Sign in, ลิงก์ "No account? Create one"
 - **Responsive:** Card `max-w-[400px]` บน mobile, padding ปรับตาม breakpoint
@@ -1376,7 +1419,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 ### Code
 
-**`app/(auth)/login/page.tsx`** — Login page (Server Component)
+`**app/(auth)/login/page.tsx`** — Login page (Server Component)
+
 ```tsx
 import type { Metadata } from "next";
 import LoginForm from "./LoginForm";
@@ -1404,7 +1448,8 @@ export default function LoginPage() {
 }
 ```
 
-**`app/(auth)/login/LoginForm.tsx`** — Form (Client Component)
+`**app/(auth)/login/LoginForm.tsx**` — Form (Client Component)
+
 ```tsx
 "use client";
 
@@ -1478,11 +1523,13 @@ export default function LoginForm() {
 ## Step 1.5 — Register Page UI
 
 ### ทำอะไร
+
 - สร้างหน้า Register (`/register`) ตาม design ใน design.pen (node FYiSq — Page 4 Register)
 - เฉพาะส่วน UI Design — ไม่มี logic auth จริง
 - รองรับ responsive (mobile, tablet, desktop)
 
 ### อธิบาย
+
 - **Route:** `app/(auth)/register/page.tsx` — ใช้ route group `(auth)` ตาม nextjs-core
 - **Design:** Card 400px, logo "Medium", title "Join Medium.", subtitle "Create your account.", ช่อง Full Name, Email, Password (มี Show/Hide), ปุ่ม Create account, ลิงก์ "Already have an account? Sign in"
 - **Responsive:** Card `max-w-[400px]` บน mobile, padding ปรับตาม breakpoint (p-6 sm:p-10 sm:px-12 sm:py-10)
@@ -1490,7 +1537,8 @@ export default function LoginForm() {
 
 ### Code
 
-**`app/(auth)/register/page.tsx`** — Register page (Server Component)
+`**app/(auth)/register/page.tsx`** — Register page (Server Component)
+
 ```tsx
 import type { Metadata } from "next";
 import RegisterForm from "./RegisterForm";
@@ -1518,7 +1566,8 @@ export default function RegisterPage() {
 }
 ```
 
-**`app/(auth)/register/RegisterForm.tsx`** — Form (Client Component)
+`**app/(auth)/register/RegisterForm.tsx**` — Form (Client Component)
+
 ```tsx
 "use client";
 
@@ -1604,8 +1653,6 @@ export default function RegisterForm() {
 
 ## Step 1.6 — Header (อัปเดต responsive + theme)
 
-### 1.6.1 การเปลี่ยนแปลง
-
 อัปเดต `web/app/components/Header.tsx` ให้รองรับ responsive และใช้ design tokens จาก theme:
 
 - **Responsive:** Desktop แสดง nav แนวนอน; Mobile แสดง hamburger menu + dropdown
@@ -1613,7 +1660,8 @@ export default function RegisterForm() {
 - **สถานะ login:** แสดง Write + Avatar เมื่อ `isLoggedIn`; แสดง Login + Register เมื่อยังไม่ login (TODO: wire to auth)
 - **Mobile menu:** ปุ่ม hamburger สลับเป็น X เมื่อเปิด, dropdown แสดงลิงก์ Write/Profile หรือ Login/Register
 
-**`web/app/components/Header.tsx`**
+`**web/app/components/Header.tsx`**
+
 ```tsx
 "use client";
 
@@ -1755,3 +1803,4 @@ export default function Header() {
 ```
 
 ---
+
