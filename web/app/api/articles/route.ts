@@ -26,34 +26,36 @@ export async function GET(request: NextRequest) {
       Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10))
     );
     const skip = (page - 1) * limit;
+    const sort = searchParams.get("sort") ?? "newest";
 
     const session = await getSession();
     const currentUserId = session?.userId;
 
+    const where = {
+      OR: [
+        { statusId: 1 },
+        ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+      ],
+    };
+
+    // Determine orderBy based on sort parameter
+    const orderBy =
+      sort === "popular"
+        ? { likes: { _count: "desc" as const } }
+        : { createdAt: "desc" as const };
+
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
-        where: {
-          OR: [
-            { statusId: 1 },
-            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
-          ],
-        },
+        where,
         include: {
           author: { select: { id: true, name: true } },
           _count: { select: { likes: true } },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
       }),
-      prisma.article.count({
-        where: {
-          OR: [
-            { statusId: 1 },
-            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
-          ],
-        },
-      }),
+      prisma.article.count({ where }),
     ]);
 
     const items = articles.map((a) => ({

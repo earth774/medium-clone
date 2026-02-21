@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import ArticleCard from "./components/ArticleCard";
 import Sidebar from "./components/Sidebar";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 type ArticleItem = {
   id: string;
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -59,7 +61,7 @@ export default function HomePage() {
         setLoading(true);
         setError(null);
         const { data } = await axios.get<ApiResponse>("/api/articles", {
-          params: { page: 1, limit: PAGE_SIZE },
+          params: { page: currentPage, limit: PAGE_SIZE },
         });
         setArticles(data.items);
         setPagination(data.pagination);
@@ -71,7 +73,19 @@ export default function HomePage() {
       }
     }
     fetchArticles();
-  }, []);
+  }, [currentPage]);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((p) => p - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination && currentPage < pagination.totalPages) {
+      setCurrentPage((p) => p + 1);
+    }
+  };
 
   if (loading) {
     return (
@@ -127,12 +141,32 @@ export default function HomePage() {
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
           <nav
-            className="flex justify-center gap-2 mt-8 pt-8 border-t border-border"
+            className="flex items-center justify-center gap-4 mt-8 pt-8 border-t border-border"
             aria-label="Pagination"
           >
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage <= 1}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-text-2 hover:text-text-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+
             <span className="text-sm text-text-3">
-              Page {pagination.page} of {pagination.totalPages}
+              Page {currentPage} of {pagination.totalPages}
             </span>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage >= pagination.totalPages}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-text-2 hover:text-text-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </nav>
         )}
       </div>
