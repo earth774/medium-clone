@@ -4,19 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 
-const TOPICS = [
-  "Technology",
-  "Design",
-  "Culture",
-  "Business",
-  "Politics",
-  "Science",
-  "Health",
-  "Writing",
-  "Art",
-  "Music",
-];
-
 const FOOTER_LINKS = [
   { label: "Help", href: "#" },
   { label: "About", href: "#" },
@@ -39,14 +26,21 @@ type PopularArticle = {
   likeCount: number;
 };
 
+type Category = {
+  id: number;
+  name: string;
+};
+
 export default function Sidebar() {
   const [popularArticles, setPopularArticles] = useState<PopularArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
     async function fetchPopularArticles() {
       try {
-        setLoading(true);
+        setLoadingArticles(true);
         const { data } = await axios.get("/api/articles", {
           params: { sort: "popular", limit: 3 },
         });
@@ -55,11 +49,25 @@ export default function Sidebar() {
         console.error("Failed to fetch popular articles:", err);
         setPopularArticles([]);
       } finally {
-        setLoading(false);
+        setLoadingArticles(false);
+      }
+    }
+
+    async function fetchCategories() {
+      try {
+        setLoadingCategories(true);
+        const { data } = await axios.get<{ items: Category[] }>("/api/categories");
+        setCategories(data.items);
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
       }
     }
 
     fetchPopularArticles();
+    fetchCategories();
   }, []);
 
   return (
@@ -70,7 +78,7 @@ export default function Sidebar() {
           <h3 className="text-[13px] font-bold text-text-1 mb-4">
             Popular Articles
           </h3>
-          {loading ? (
+          {loadingArticles ? (
             <div className="text-sm text-text-3">Loading...</div>
           ) : popularArticles.length === 0 ? (
             <div className="text-sm text-text-3">No articles yet</div>
@@ -107,17 +115,23 @@ export default function Sidebar() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-3 mb-4">
             Recommended topics
           </h3>
-          <div className="flex flex-wrap gap-2">
-            {TOPICS.map((topic) => (
-              <Link
-                key={topic}
-                href={`/topics/${topic.toLowerCase()}`}
-                className="rounded-full bg-surface px-4 py-2 text-sm text-text-2 hover:bg-border hover:text-text-1 transition-colors"
-              >
-                {topic}
-              </Link>
-            ))}
-          </div>
+          {loadingCategories ? (
+            <div className="text-sm text-text-3">Loading...</div>
+          ) : categories.length === 0 ? (
+            <div className="text-sm text-text-3">No topics yet</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/topics/${category.name.toLowerCase()}`}
+                  className="rounded-full bg-surface px-4 py-2 text-sm text-text-2 hover:bg-border hover:text-text-1 transition-colors"
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <div className="h-px bg-border" />
