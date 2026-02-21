@@ -15,6 +15,7 @@ type ArticleItem = {
   publishedAt: string;
   readTimeMinutes: number;
   likeCount?: number;
+  statusId?: number;
 };
 
 type ApiResponse = {
@@ -27,11 +28,30 @@ type ApiResponse = {
   };
 };
 
+type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export default function HomePage() {
   const [articles, setArticles] = useState<ArticleItem[]>([]);
   const [pagination, setPagination] = useState<ApiResponse["pagination"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function fetchCurrentUser() {
+      try {
+        const { data } = await axios.get<{ user: User | null }>("/api/auth/session");
+        setCurrentUser(data.user);
+      } catch {
+        setCurrentUser(null);
+      }
+    }
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     async function fetchArticles() {
@@ -92,10 +112,13 @@ export default function HomePage() {
                 title={article.title}
                 excerpt={article.excerpt}
                 authorName={article.author.name}
+                authorId={article.author.id}
                 publishedAt={new Date(article.publishedAt)}
                 readTimeMinutes={article.readTimeMinutes}
                 likeCount={article.likeCount ?? 0}
-                isLoggedIn={false}
+                isLoggedIn={!!currentUser}
+                currentUserId={currentUser?.id}
+                statusId={article.statusId}
               />
             ))
           )}

@@ -1,16 +1,19 @@
 import Link from "next/link";
-import { Heart, Bookmark } from "lucide-react";
+import { Heart, Bookmark, FilePen } from "lucide-react";
 
 type ArticleCardProps = {
   id: string;
   title: string;
   excerpt: string;
   authorName: string;
+  authorId: string;
   publishedAt: Date;
   readTimeMinutes?: number;
   categoryName?: string;
   likeCount?: number;
   isLoggedIn?: boolean;
+  currentUserId?: string;
+  statusId?: number;
 };
 
 function getInitials(name: string): string {
@@ -26,14 +29,20 @@ export default function ArticleCard({
   title,
   excerpt,
   authorName,
+  authorId,
   publishedAt,
   readTimeMinutes = 5,
   categoryName,
   likeCount = 0,
   isLoggedIn = false,
+  currentUserId,
+  statusId = 1,
 }: ArticleCardProps) {
+  const isDraft = statusId === 2;
+  const isOwner = currentUserId === authorId;
+
   return (
-    <article className="border border-border rounded-lg py-6 px-6">
+    <article className={`border rounded-lg py-6 px-6 ${isDraft ? "border-orange-300 bg-orange-50/30" : "border-border"}`}>
       <div className="flex flex-col gap-2">
         {/* Author row */}
         <div className="flex items-center gap-2">
@@ -46,6 +55,12 @@ export default function ArticleCard({
           <span className="text-[13px] font-medium text-text-1">
             {authorName}
           </span>
+          {isDraft && isOwner && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700">
+              <FilePen className="w-3 h-3" />
+              Draft
+            </span>
+          )}
         </div>
 
         {/* Title */}

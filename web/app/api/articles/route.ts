@@ -27,9 +27,17 @@ export async function GET(request: NextRequest) {
     );
     const skip = (page - 1) * limit;
 
+    const session = await getSession();
+    const currentUserId = session?.userId;
+
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
-        where: { statusId: 1 },
+        where: {
+          OR: [
+            { statusId: 1 },
+            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+          ],
+        },
         include: {
           author: { select: { id: true, name: true } },
           _count: { select: { likes: true } },
@@ -38,7 +46,14 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.article.count({ where: { statusId: 1 } }),
+      prisma.article.count({
+        where: {
+          OR: [
+            { statusId: 1 },
+            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+          ],
+        },
+      }),
     ]);
 
     const items = articles.map((a) => ({
@@ -49,6 +64,7 @@ export async function GET(request: NextRequest) {
       publishedAt: a.createdAt,
       readTimeMinutes: estimateReadTime(a.content),
       likeCount: a._count?.likes ?? 0,
+      statusId: a.statusId,
     }));
 
     return NextResponse.json({

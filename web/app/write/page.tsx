@@ -27,7 +27,6 @@ export default function WritePage() {
   const [body, setBody] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [draftStatus, setDraftStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,11 +56,7 @@ export default function WritePage() {
         categoryId: selectedCategoryId ?? undefined,
         publish,
       });
-      if (publish) {
-        router.push(`/articles/${data.id}`);
-      } else {
-        setDraftStatus(`Draft saved ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`);
-      }
+      router.push(`/articles/${data.id}`);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
@@ -88,17 +83,11 @@ export default function WritePage() {
             <ArrowLeft className="w-4 h-4 shrink-0" />
             Back
           </Link>
-          {draftStatus && (
-            <span className="text-text-3 text-xs sm:text-[13px] truncate">
-              {draftStatus}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-3 order-2 sm:order-2 w-full sm:w-auto justify-end">
           {error && (
             <span className="text-red-500 text-sm">{error}</span>
           )}
-          {/* Save draft - ซ่อนไว้ก่อน
           <button
             type="button"
             onClick={() => handleSave(false)}
@@ -107,7 +96,6 @@ export default function WritePage() {
           >
             Save draft
           </button>
-          */}
           <button
             type="button"
             onClick={() => handleSave(true)}

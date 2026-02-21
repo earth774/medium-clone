@@ -485,8 +485,8 @@ npx prisma migrate dev --name add-article-subtitle-and-text
 - **ดึง categories:** `useEffect` เรียก `GET /api/categories` ตอนโหลด → แสดง topic chips จาก API
 - **เลือก topic:** คลิกเลือก/ยกเลิก (toggle) → เก็บ `selectedCategoryId` (number | null)
 - ใช้ `axios.post("/api/articles", { title, subtitle, content, categoryId, publish })`
-- **Save draft:** ปุ่มถูก comment out ซ่อนไว้ก่อน
-- **Publish:** `publish: true` → redirect ไป `/articles/[id]`
+- **Save draft:** `handleSave(false)` → บันทึกเป็น Draft (statusId: 2)
+- **Publish:** `handleSave(true)` → redirect ไป `/articles/[id]` (statusId: 1)
 - แสดง error จาก API (เช่น "Unauthorized", "Title is required")
 - ปุ่ม disabled ขณะ `isSubmitting`
 
@@ -507,9 +507,9 @@ npx prisma migrate dev --name add-article-subtitle-and-text
 |------|------------|
 | **Schema** | เพิ่ม `subtitle`, `content` ใช้ `@db.Text` |
 | **API categories** | GET `/api/categories` — ดึง categories จาก DB |
-| **API articles** | POST `/api/articles` — auth, validate, markdown→HTML, สร้าง Article + ArticleCategory |
-| **Write page** | Top bar ชิด navbar (`relative z-10 -mt-8`), fetch categories จาก API, Save draft ซ่อนไว้, Publish → redirect |
-| **Article page** | แสดง `subtitle` ถ้ามี แทน excerpt |
+| **API articles** | GET/POST `/api/articles` — รวม draft support, auth, validate, markdown→HTML |
+| **Write page** | Top bar ชิด navbar, fetch categories, Save draft + Publish ทำงาน |
+| **Article page** | แสดง `subtitle` ถ้ามี, draft banner สำหรับเจ้าของ |
 
 ### โค้ดที่แก้ไข (ทั้งไฟล์)
 
@@ -561,7 +561,7 @@ export async function GET() {
 }
 ```
 
-#### web/app/api/articles/route.ts
+#### web/app/api/articles/route.ts (ไฟล์ทั้งหมด — รวม draft support)
 
 ```ts
 import { NextRequest, NextResponse } from "next/server";
@@ -593,9 +593,17 @@ export async function GET(request: NextRequest) {
     );
     const skip = (page - 1) * limit;
 
+    const session = await getSession();
+    const currentUserId = session?.userId;
+
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
-        where: { statusId: 1 },
+        where: {
+          OR: [
+            { statusId: 1 },
+            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+          ],
+        },
         include: {
           author: { select: { id: true, name: true } },
           _count: { select: { likes: true } },
@@ -604,7 +612,14 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.article.count({ where: { statusId: 1 } }),
+      prisma.article.count({
+        where: {
+          OR: [
+            { statusId: 1 },
+            ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+          ],
+        },
+      }),
     ]);
 
     const items = articles.map((a) => ({
@@ -615,6 +630,7 @@ export async function GET(request: NextRequest) {
       publishedAt: a.createdAt,
       readTimeMinutes: estimateReadTime(a.content),
       likeCount: a._count?.likes ?? 0,
+      statusId: a.statusId,
     }));
 
     return NextResponse.json({
@@ -713,7 +729,7 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-#### web/app/write/page.tsx
+#### web/app/write/page.tsx (ไฟล์ทั้งหมด)
 
 ```tsx
 "use client";
@@ -745,7 +761,6 @@ export default function WritePage() {
   const [body, setBody] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [draftStatus, setDraftStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -775,11 +790,7 @@ export default function WritePage() {
         categoryId: selectedCategoryId ?? undefined,
         publish,
       });
-      if (publish) {
-        router.push(`/articles/${data.id}`);
-      } else {
-        setDraftStatus(`Draft saved ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`);
-      }
+      router.push(`/articles/${data.id}`);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
@@ -806,17 +817,11 @@ export default function WritePage() {
             <ArrowLeft className="w-4 h-4 shrink-0" />
             Back
           </Link>
-          {draftStatus && (
-            <span className="text-text-3 text-xs sm:text-[13px] truncate">
-              {draftStatus}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-3 order-2 sm:order-2 w-full sm:w-auto justify-end">
           {error && (
             <span className="text-red-500 text-sm">{error}</span>
           )}
-          {/* Save draft - ซ่อนไว้ก่อน
           <button
             type="button"
             onClick={() => handleSave(false)}
@@ -825,7 +830,185 @@ export default function WritePage() {
           >
             Save draft
           </button>
-          */}
+          <button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={isSubmitting}
+            className="rounded-full bg-primary text-white px-5 py-2.5 text-[15px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            Publish
+          </button>
+        </div>
+      </div>
+
+      {/* Editor Body */}
+      <div className="flex justify-center w-full py-8 sm:py-12">
+        <div className="w-full max-w-[740px] flex flex-col gap-6 px-0">
+          {/* Title */}
+          <div className="border-b border-border pb-2">
+            <input
+              type="text"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full font-logo text-2xl sm:text-[42px] font-bold leading-tight text-text-1 placeholder:text-text-3 bg-transparent border-none outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Subtitle */}
+          <div className="border-b border-border pb-2">
+            <input
+              type="text"
+              placeholder="Tell your story..."
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              className="w-full font-logo text-xl sm:text-2xl leading-snug text-text-1 placeholder:text-text-3 bg-transparent border-none outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Add a topic */}
+          <div className="flex flex-col gap-2.5">
+            <span className="text-text-2 text-[13px] font-semibold">
+              Add a topic
+            </span>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1">
+              {categories.map((cat) => {
+                const isActive = selectedCategoryId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() =>
+                      setSelectedCategoryId((prev) =>
+                        prev === cat.id ? null : cat.id
+                      )
+                    }
+                    className={`
+                      shrink-0 rounded-full px-3.5 py-1.5 text-[13px] border
+                      transition-colors
+                      ${
+                        isActive
+                          ? "bg-primary text-white border-primary"
+                          : "bg-surface text-text-1 border-border hover:border-text-3"
+                      }
+                    `}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Body (Markdown) - Rich text editor */}
+          <div className="border border-border rounded-sm min-h-[400px] flex flex-col overflow-hidden">
+            <span className="text-text-3 text-xs font-medium px-3 pt-4 pb-2">
+              Markdown
+            </span>
+            <MarkdownEditor
+              value={body}
+              onChange={(v) => setBody(v ?? "")}
+              placeholder={MARKDOWN_PLACEHOLDER}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+import { ArrowLeft } from "lucide-react";
+
+import MarkdownEditor from "./MarkdownEditor";
+
+type Category = { id: number; name: string };
+
+const MARKDOWN_PLACEHOLDER = `# Write your article in Markdown
+
+**Bold** *Italic* ~~Strikethrough~~ \`inline code\`
+
+## Headings: # H1 ## H2 ### H3
+
+## Lists: - bullet 1. ordered
+
+> Blockquotes | \`\`\` Code blocks \`\`\``;
+
+export default function WritePage() {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [body, setBody] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    axios
+      .get<{ items: Category[] }>("/api/categories")
+      .then((res) => setCategories(res.data.items))
+      .catch(() => setCategories([]));
+  }, []);
+
+  async function handleSave(publish: boolean) {
+    setError(null);
+    if (!title.trim()) {
+      setError("กรุณากรอกหัวข้อ");
+      return;
+    }
+    if (!body.trim()) {
+      setError("กรุณากรอกเนื้อหา");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { data } = await axios.post("/api/articles", {
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        content: body.trim(),
+        categoryId: selectedCategoryId ?? undefined,
+        publish,
+      });
+      router.push(`/articles/${data.id}`);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col w-full min-h-0">
+      {/* Editor Top Bar - full width, flush with navbar */}
+      <div
+        className="relative z-10 flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg flex-wrap sm:flex-nowrap -mx-4 sm:-mx-6 lg:-mx-11 -mt-8"
+      >
+        <div className="flex items-center gap-4 order-1 sm:order-1 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-text-2 hover:text-text-1 text-sm sm:text-[15px] whitespace-nowrap"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            Back
+          </Link>
+        </div>
+        <div className="flex items-center gap-3 order-2 sm:order-2 w-full sm:w-auto justify-end">
+          {error && (
+            <span className="text-red-500 text-sm">{error}</span>
+          )}
+          <button
+            type="button"
+            onClick={() => handleSave(false)}
+            disabled={isSubmitting}
+            className="px-4 py-2 text-text-2 hover:text-text-1 text-sm disabled:opacity-50"
+          >
+            Save draft
+          </button>
           <button
             type="button"
             onClick={() => handleSave(true)}
@@ -914,13 +1097,14 @@ export default function WritePage() {
 }
 ```
 
-#### web/app/articles/[id]/page.tsx
+#### web/app/articles/[id]/page.tsx (ไฟล์ทั้งหมด — รวม draft support)
 
 ```tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Heart, Share2 } from "lucide-react";
+import { Heart, Share2, FilePen } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { CommentSection } from "./CommentSection";
 
 export const dynamic = "force-dynamic";
@@ -944,8 +1128,11 @@ function getReadTime(content: string): number {
 
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params;
+  const session = await getSession();
+  const currentUserId = session?.userId;
+
   const article = await prisma.article.findUnique({
-    where: { id, statusId: 1 },
+    where: { id },
     include: {
       author: { select: { id: true, name: true } },
       categories: {
@@ -958,6 +1145,14 @@ export default async function ArticlePage({ params }: Props) {
 
   if (!article) notFound();
 
+  const isDraft = article.statusId === 2;
+  const isOwner = currentUserId === article.author.id;
+
+  // Draft articles are only accessible by the owner
+  if (isDraft && !isOwner) {
+    notFound();
+  }
+
   const readTime = getReadTime(article.content);
   const initials = getInitials(article.author.name);
   const plainContent = article.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -969,7 +1164,15 @@ export default async function ArticlePage({ params }: Props) {
   }).format(article.createdAt);
 
   return (
-    <article className="max-w-[680px] mx-auto pt-12 pb-12 flex flex-col gap-6">
+    <article className={`max-w-[680px] mx-auto pt-12 pb-12 flex flex-col gap-6 ${isDraft ? "relative" : ""}`}>
+      {isDraft && (
+        <div className="absolute -top-2 left-0 right-0 flex justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700">
+            <FilePen className="w-4 h-4" />
+            Draft — Only visible to you
+          </span>
+        </div>
+      )}
       {/* Title */}
       <h1 className="font-logo text-[42px] font-bold leading-[1.2] text-text-1">
         {article.title}
@@ -1099,5 +1302,125 @@ export default async function ArticlePage({ params }: Props) {
   "react-dom": "19.2.3"
 }
 ```
+
+---
+
+## 3.5 Save Draft Feature
+
+ฟีเจอร์ Save Draft ช่วยให้ผู้ใช้สามารถบันทึกบทความที่ยังไม่เสร็จและกลับมาแก้ไขภายหลังได้
+
+### Requirements
+
+1. **หน้า Write** — สามารถ Save draft ได้ (ปุ่ม "Save draft" ทำงานแล้ว)
+2. **หน้า Feed** — แสดงสถานะ Draft เฉพาะเจ้าของบทความ (ผู้อื่นไม่เห็น)
+3. **Article Detail** — ถ้าเป็น Draft เจ้าของเข้าดูได้เท่านั้น (ผู้อื่นได้ 404)
+
+### Status IDs
+
+| ID | Name | Description |
+|----|------|-------------|
+| 1 | Active | Published articles (visible to everyone) |
+| 2 | Draft | Unpublished articles (owner only) |
+
+### Implementation Details
+
+#### 1. Write Page (`web/app/write/page.tsx`)
+
+- เปิดใช้งานปุ่ม "Save draft" ( uncomment ที่ซ่อนไว้ )
+- `handleSave(false)` → บันทึกเป็น Draft (statusId: 2)
+- `handleSave(true)` → Publish (statusId: 1)
+- แสดง `draftStatus` ใน top bar เมื่อบันทึกสำเร็จ
+
+#### 2. API — GET /api/articles (Feed)
+
+แก้ไข query ให้ดึงบทความที่:
+- `statusId: 1` (Active) — ทุกคนเห็น
+- `statusId: 2` (Draft) + `authorId: currentUserId` — เฉพาะเจ้าของเห็น
+
+```ts
+const session = await getSession();
+const currentUserId = session?.userId;
+
+const where = {
+  OR: [
+    { statusId: 1 },
+    ...(currentUserId ? [{ statusId: 2, authorId: currentUserId }] : []),
+  ],
+};
+```
+
+Response เพิ่ม `statusId` ใน items:
+```ts
+items: articles.map((a) => ({
+  ...,
+  statusId: a.statusId,
+})),
+```
+
+#### 3. ArticleCard — Draft Badge
+
+เพิ่ม props:
+```ts
+type ArticleCardProps = {
+  ...,
+  authorId: string;
+  currentUserId?: string;
+  statusId?: number;
+};
+```
+
+แสดง Draft badge เฉพาะเจ้าของ:
+```tsx
+const isDraft = statusId === 2;
+const isOwner = currentUserId === authorId;
+
+{isDraft && isOwner && (
+  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700">
+    <FilePen className="w-3 h-3" />
+    Draft
+  </span>
+)}
+```
+
+Border สีส้มสำหรับ Draft:
+```tsx
+<article className={`border rounded-lg py-6 px-6 ${isDraft ? "border-orange-300 bg-orange-50/30" : "border-border"}`}>
+```
+
+#### 4. Article Detail Page — Owner-only Access
+
+- ดึง session และ check ว่าเป็น owner หรือไม่
+- Draft articles: ถ้าไม่ใช่ owner → `notFound()`
+- แสดง Draft badge ที่ด้านบนของบทความ
+
+```tsx
+const session = await getSession();
+const currentUserId = session?.userId;
+const isDraft = article.statusId === 2;
+const isOwner = currentUserId === article.author.id;
+
+if (isDraft && !isOwner) {
+  notFound();
+}
+```
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `web/app/write/page.tsx` | Uncomment Save draft button |
+| `web/app/api/articles/route.ts` | Include user's drafts in GET, add statusId to response |
+| `web/app/components/ArticleCard.tsx` | Add draft badge, authorId, statusId props |
+| `web/app/page.tsx` | Fetch current user, pass props to ArticleCard |
+| `web/app/articles/[id]/page.tsx` | Check ownership for drafts, add draft banner |
+
+### Testing Checklist
+
+- [ ] Save draft button works → creates article with statusId 2
+- [ ] Draft appears in Feed only for owner (orange border + badge)
+- [ ] Others don't see draft in Feed
+- [ ] Owner can view draft article detail (with banner)
+- [ ] Others get 404 when accessing draft directly
+- [ ] Published articles work as before
 
 ---
