@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isLoggedIn = false; // TODO: wire to auth
+  const isLoggedIn = true; // TODO: wire to auth
 
   return (
     <header className="relative h-[57px] flex items-center justify-between px-4 sm:px-6 lg:px-11 border-b border-border bg-bg">
