@@ -3675,19 +3675,80 @@
     {
       "type": "frame",
       "id": "p3K9Q",
-      "x": -2662.338411557772,
-      "y": 30045.01936944719,
+      "x": -3605,
+      "y": 30092,
       "name": "Page 3 — Sign In",
-      "width": 840,
+      "width": 1280,
+      "height": 728,
       "fill": "$color-bg",
       "layout": "vertical",
-      "padding": [
-        80,
-        0
-      ],
-      "justifyContent": "center",
+      "gap": 48,
       "alignItems": "center",
       "children": [
+        {
+          "type": "frame",
+          "id": "N5eH8",
+          "name": "Navbar — Guest",
+          "width": "fill_container",
+          "height": 57,
+          "fill": "#FFFFFF",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$color-border"
+          },
+          "gap": 8,
+          "padding": [
+            0,
+            44
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "ZCDjY",
+              "name": "guestNavLogo",
+              "fill": "$color-text-1",
+              "content": "Medium",
+              "fontFamily": "Source Serif 4",
+              "fontSize": 24,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "gr0ux",
+              "name": "guestNavRight",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mf1oN",
+                  "name": "guestGetStarted",
+                  "fill": "$color-text-1",
+                  "cornerRadius": 999,
+                  "padding": [
+                    10,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Iz1kb",
+                      "name": "getStartedTxt",
+                      "fill": "#FFFFFF",
+                      "content": "Sign In",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         {
           "type": "frame",
           "id": "R6LGd",
@@ -3904,19 +3965,80 @@
     {
       "type": "frame",
       "id": "FYiSq",
-      "x": -1742.338411557772,
-      "y": 30045.01936944719,
+      "x": -2185,
+      "y": 30045,
       "name": "Page 4 — Register",
-      "width": 840,
+      "width": 1283,
+      "height": 821,
       "fill": "$color-bg",
       "layout": "vertical",
-      "padding": [
-        80,
-        0
-      ],
-      "justifyContent": "center",
+      "gap": 48,
       "alignItems": "center",
       "children": [
+        {
+          "type": "frame",
+          "id": "kQfBq",
+          "name": "Navbar — Guest",
+          "width": 1280,
+          "height": 57,
+          "fill": "#FFFFFF",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$color-border"
+          },
+          "gap": 8,
+          "padding": [
+            16,
+            44
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "PtBfM",
+              "name": "guestNavLogo",
+              "fill": "$color-text-1",
+              "content": "Medium",
+              "fontFamily": "Source Serif 4",
+              "fontSize": 24,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "eTpfS",
+              "name": "guestNavRight",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wRWCW",
+                  "name": "guestGetStarted",
+                  "fill": "$color-text-1",
+                  "cornerRadius": 999,
+                  "padding": [
+                    10,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "K8Fuu",
+                      "name": "getStartedTxt",
+                      "fill": "#FFFFFF",
+                      "content": "Sign In",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         {
           "type": "frame",
           "id": "PGhH5",
