@@ -3072,42 +3072,6 @@
                       "children": [
                         {
                           "type": "frame",
-                          "id": "xebjx",
-                          "name": "s7d1i1",
-                          "width": "fill_container",
-                          "fill": "#1e293b",
-                          "cornerRadius": 8,
-                          "gap": 14,
-                          "padding": [
-                            12,
-                            16
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "a3A0A",
-                              "name": "s7d1i1check",
-                              "fill": "#ffffff",
-                              "content": "✅",
-                              "fontFamily": "Inter",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "text",
-                              "id": "U1VJX",
-                              "name": "s7d1i1text",
-                              "fill": "#e2e8f0",
-                              "content": "Project Setup ต่อจาก week แรก",
-                              "fontFamily": "Inter",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
                           "id": "TuWqo",
                           "name": "s7d1i2",
                           "width": "fill_container",
@@ -3136,6 +3100,42 @@
                               "name": "s7d1i2text",
                               "fill": "#e2e8f0",
                               "content": "ความรู้พื้นฐานในการใช้งาน git",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xebjx",
+                          "name": "s7d1i1",
+                          "width": "fill_container",
+                          "fill": "#1e293b",
+                          "cornerRadius": 8,
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "a3A0A",
+                              "name": "s7d1i1check",
+                              "fill": "#ffffff",
+                              "content": "✅",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "U1VJX",
+                              "name": "s7d1i1text",
+                              "fill": "#e2e8f0",
+                              "content": "Project Setup ต่อจาก week แรก",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
