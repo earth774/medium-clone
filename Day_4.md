@@ -992,346 +992,300 @@ export async function DELETE(
 ```typescript
 "use client";
 
-import axios from "axios";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import TurndownService from "turndown";
+import MarkdownEditor from "../../../write/MarkdownEditor";
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
+const MARKDOWN_PLACEHOLDER = `# Write your article in Markdown
+
+**Bold** *Italic* ~~Strikethrough~~ \`inline code\`
+
+## Headings: # H1 ## H2 ### H3
+
+## Lists: - bullet 1. ordered
+
+> Blockquotes | \`\`\` Code blocks \`\`\``;
+
+// Initialize turndown for HTML to Markdown conversion
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+});
+
+interface EditArticlePageProps {
+  params: Promise<{ id: string }>;
 }
 
-const BIO_MAX = 160;
-
-const inputBase =
-  "h-10 w-full rounded border border-border bg-white px-3 text-text-1 placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-[15px]";
-
-function PasswordInput({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder = "••••••••",
-}: {
+interface Article {
   id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[13px] font-medium text-text-1">
-        {label}
-      </label>
-      <div className="flex h-10 w-full items-center justify-between gap-2 rounded border border-border bg-white px-3 text-text-1 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
-        <input
-          id={id}
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-text-3 focus:outline-none"
-          placeholder={placeholder}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="shrink-0 text-text-3 hover:text-text-2 transition-colors"
-          aria-label={show ? "Hide password" : "Show password"}
-          tabIndex={-1}
-        >
-          {show ? (
-            <EyeOff className="w-5 h-5" aria-hidden />
-          ) : (
-            <Eye className="w-5 h-5" aria-hidden />
-          )}
-        </button>
-      </div>
-    </div>
-  );
+  title: string;
+  subtitle: string | null;
+  content: string;
+  statusId: number;
+  authorId: string;
 }
 
-export default function EditProfilePage() {
+export default function EditArticlePage({ params }: EditArticlePageProps) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [profileSuccess, setProfileSuccess] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [articleId, setArticleId] = useState<string>("");
+  const [article, setArticle] = useState<Article | null>(null);
+  const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [content, setContent] = useState("");
+  const [statusId, setStatusId] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Resolve params
   useEffect(() => {
-    async function fetchProfile() {
+    params.then((p) => setArticleId(p.id));
+  }, [params]);
+
+  // Fetch article data
+  useEffect(() => {
+    if (!articleId) return;
+
+    async function fetchArticle() {
       try {
-        const res = await axios.get("/api/profile");
-        const { user } = res.data;
-        setName(user.name ?? "");
-        setUsername(user.username ?? "");
-        setBio(user.bio ?? "");
-      } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          router.push("/login?redirect=/profile/edit");
+        setIsLoading(true);
+        const response = await fetch(`/api/articles/${articleId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Article not found");
+          }
+          throw new Error("Failed to load article");
+        }
+
+        const data = await response.json();
+
+        // Check if user is the owner
+        const sessionRes = await fetch("/api/profile");
+        if (!sessionRes.ok) {
+          router.push("/login?redirect=/articles/" + articleId + "/edit");
           return;
         }
-        setProfileError("Failed to load profile");
+        const session = await sessionRes.json();
+
+        if (data.authorId !== session.user.id) {
+          setError("You can only edit your own articles");
+          return;
+        }
+
+        setArticle(data);
+        setTitle(data.title);
+        setSubtitle(data.subtitle || "");
+        // Convert HTML content to Markdown for the editor
+        const markdownContent = turndownService.turndown(data.content);
+        setContent(markdownContent);
+        setStatusId(data.statusId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load article");
       } finally {
-        setIsLoadingProfile(false);
+        setIsLoading(false);
       }
     }
-    fetchProfile();
-  }, [router]);
 
-  async function handleSaveProfile() {
-    setProfileError(null);
-    setProfileSuccess(false);
-    if (!name.trim()) {
-      setProfileError("Name is required");
+    fetchArticle();
+  }, [articleId, router]);
+
+  const handleSave = async (publish: boolean) => {
+    if (!articleId) return;
+
+    setError(null);
+    if (!title.trim()) {
+      setError("Title is required");
       return;
     }
-    setIsSavingProfile(true);
+    if (!content.trim()) {
+      setError("Content is required");
+      return;
+    }
+
+    setIsSaving(true);
+
     try {
-      await axios.patch("/api/profile", {
-        name: name.trim(),
-        username: username.trim() || undefined,
-        bio: bio.trim(),
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          subtitle: subtitle.trim() || null,
+          content: content.trim(),
+          statusId: publish ? 1 : 2,
+        }),
       });
-      setProfileSuccess(true);
-      router.refresh();
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        setProfileError(err.response.data.error);
-      } else {
-        setProfileError("Failed to update profile");
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update article");
       }
-    } finally {
-      setIsSavingProfile(false);
-    }
-  }
 
-  async function handleUpdatePassword() {
-    setPasswordError(null);
-    setPasswordSuccess(false);
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Please fill in all password fields");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New password and confirm password do not match");
-      return;
-    }
-    setIsUpdatingPassword(true);
-    try {
-      await axios.patch("/api/profile/password", {
-        currentPassword,
-        newPassword,
-      });
-      setPasswordSuccess(true);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      const data = await response.json();
+      setArticle(data.article);
+      setStatusId(data.article.statusId);
+
+      // Redirect after successful save
+      router.push(`/articles/${articleId}`);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        setPasswordError(err.response.data.error);
-      } else {
-        setPasswordError("Failed to update password");
-      }
+      setError(err instanceof Error ? err.message : "Failed to update article");
     } finally {
-      setIsUpdatingPassword(false);
+      setIsSaving(false);
     }
-  }
+  };
 
-  const bioCount = bio.length;
-  const bioOverLimit = bioCount > BIO_MAX;
-
-  if (isLoadingProfile) {
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="w-full max-w-[500px] mx-auto pt-8 sm:pt-12 pb-12 flex justify-center">
-        <p className="text-text-2">Loading profile…</p>
+      <div className="flex flex-col w-full min-h-0">
+        <div className="relative z-10 flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg -mx-4 sm:-mx-6 lg:-mx-11 -mt-8">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/articles/${articleId}`}
+              className="flex items-center gap-1.5 text-text-2 hover:text-text-1 text-sm sm:text-[15px]"
+            >
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              Back
+            </Link>
+          </div>
+        </div>
+        <div className="flex justify-center w-full py-12">
+          <div className="w-full max-w-[740px] flex items-center justify-center">
+            <div className="flex items-center gap-2 text-text-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading article...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - unauthorized or not found
+  if (error || !article) {
+    return (
+      <div className="flex flex-col w-full min-h-0">
+        <div className="relative z-10 flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg -mx-4 sm:-mx-6 lg:-mx-11 -mt-8">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-text-2 hover:text-text-1 text-sm sm:text-[15px]"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            Back
+          </Link>
+        </div>
+        <div className="flex justify-center w-full py-12">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error || "Article not found"}</p>
+            <Link
+              href="/"
+              className="text-primary hover:underline font-medium"
+            >
+              Go back home
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[500px] mx-auto pt-8 sm:pt-12 pb-12 flex flex-col gap-6">
-      {/* Profile card — matches epProfileCard */}
-      <section
-        className="rounded-lg border border-border bg-white px-10 py-12 flex flex-col gap-6"
-        aria-labelledby="edit-profile-title"
-      >
-        <h1
-          id="edit-profile-title"
-          className="font-logo text-2xl font-semibold text-text-1"
-        >
-          Edit profile
-        </h1>
-
-        {profileError && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded" role="alert">
-            {profileError}
-          </p>
-        )}
-        {profileSuccess && (
-          <p className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded" role="status">
-            Profile updated successfully.
-          </p>
-        )}
-
-        {/* Avatar */}
-        <div className="flex flex-col items-center sm:items-start gap-3">
-          <div
-            className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[28px] shrink-0"
-            aria-hidden
+    <div className="flex flex-col w-full min-h-0">
+      {/* Editor Top Bar - full width, flush with navbar */}
+      <div className="relative z-10 flex items-center justify-between gap-4 py-3 px-4 sm:px-6 lg:px-11 border-b border-border bg-bg flex-wrap sm:flex-nowrap -mx-4 sm:-mx-6 lg:-mx-11 -mt-8">
+        <div className="flex items-center gap-4 order-1 sm:order-1 min-w-0">
+          <Link
+            href={`/articles/${articleId}`}
+            className="flex items-center gap-1.5 text-text-2 hover:text-text-1 text-sm sm:text-[15px] whitespace-nowrap"
+            aria-label="Back to article"
           >
-            {getInitials(name)}
-          </div>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            Back
+          </Link>
+          {statusId === 2 ? (
+            <span className="text-xs sm:text-[13px] text-orange-600 font-medium px-2 py-0.5 bg-orange-50 rounded-full">
+              Draft
+            </span>
+          ) : (
+            <span className="text-xs sm:text-[13px] text-green-600 font-medium px-2 py-0.5 bg-green-50 rounded-full">
+              Published
+            </span>
+          )}
         </div>
-
-        {/* Name */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="edit-name" className="text-[13px] font-medium text-text-1">
-            Name
-          </label>
-          <input
-            id="edit-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputBase}
-            placeholder="Your name"
-          />
-        </div>
-
-        {/* Username — with @ prefix like design */}
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="edit-username"
-            className="text-[13px] font-medium text-text-1"
+        <div className="flex items-center gap-3 order-2 sm:order-2 w-full sm:w-auto justify-end">
+          {error && (
+            <span className="text-red-500 text-sm">{error}</span>
+          )}
+          <button
+            type="button"
+            onClick={() => handleSave(false)}
+            disabled={isSaving}
+            className="px-4 py-2 text-text-2 hover:text-text-1 text-sm disabled:opacity-50"
           >
-            Username
-          </label>
-          <div className="flex h-10 w-full items-center gap-0.5 rounded border border-border bg-white px-3 text-text-1 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
-            <span className="text-[15px] text-text-3 shrink-0">@</span>
+            Save draft
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={isSaving}
+            className="rounded-full bg-primary text-white px-5 py-2.5 text-[15px] font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              "Publish"
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Editor Body */}
+      <div className="flex justify-center w-full py-8 sm:py-12">
+        <div className="w-full max-w-[740px] flex flex-col gap-6 px-0">
+          {/* Title */}
+          <div className="border-b border-border pb-2">
             <input
-              id="edit-username"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-text-3 focus:outline-none"
-              placeholder="username"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full font-logo text-2xl sm:text-[42px] font-bold leading-tight text-text-1 placeholder:text-text-3 bg-transparent border-none outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Subtitle */}
+          <div className="border-b border-border pb-2">
+            <input
+              type="text"
+              placeholder="Tell your story..."
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              className="w-full font-logo text-xl sm:text-2xl leading-snug text-text-1 placeholder:text-text-3 bg-transparent border-none outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Body (Markdown) - Rich text editor */}
+          <div className="border border-border rounded-sm min-h-[400px] flex flex-col overflow-hidden">
+            <span className="text-text-3 text-xs font-medium px-3 pt-4 pb-2">
+              Markdown
+            </span>
+            <MarkdownEditor
+              value={content}
+              onChange={(v) => setContent(v ?? "")}
+              placeholder={MARKDOWN_PLACEHOLDER}
             />
           </div>
         </div>
-
-        {/* Bio */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="edit-bio" className="text-[13px] font-medium text-text-1">
-            Bio
-          </label>
-          <textarea
-            id="edit-bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            maxLength={BIO_MAX}
-            rows={4}
-            className="min-h-[80px] w-full rounded border border-border bg-white px-3 py-2 text-text-1 placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y text-[14px]"
-            placeholder="Tell readers about yourself"
-          />
-          <p
-            className={`text-xs ${bioOverLimit ? "text-like" : "text-text-3"}`}
-          >
-            {bioCount} / {BIO_MAX}
-          </p>
-        </div>
-
-        {/* Buttons — gap-3, h-11 → h-[44px] to match design */}
-        <div className="flex flex-row gap-3">
-          <button
-            type="button"
-            onClick={handleSaveProfile}
-            disabled={isSavingProfile}
-            className="h-[44px] rounded-full bg-primary px-6 text-white font-medium text-[15px] hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isSavingProfile ? "Saving…" : "Save changes"}
-          </button>
-          <Link
-            href="/profile"
-            className="h-[44px] rounded-full flex items-center justify-center px-6 text-text-2 text-[15px] hover:text-text-1 transition-colors"
-          >
-            Cancel
-          </Link>
-        </div>
-      </section>
-
-      {/* Password card — matches epPasswordCard */}
-      <section
-        className="rounded-lg border border-border bg-white px-10 py-12 flex flex-col gap-6"
-        aria-labelledby="change-password-title"
-      >
-        <h2
-          id="change-password-title"
-          className="text-sm font-semibold text-text-1"
-        >
-          Change password
-        </h2>
-
-        {passwordError && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded" role="alert">
-            {passwordError}
-          </p>
-        )}
-        {passwordSuccess && (
-          <p className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded" role="status">
-            Password updated successfully.
-          </p>
-        )}
-
-        <div className="flex flex-col gap-6">
-          <PasswordInput
-            id="edit-current-password"
-            label="Current password"
-            value={currentPassword}
-            onChange={setCurrentPassword}
-          />
-          <PasswordInput
-            id="edit-new-password"
-            label="New password"
-            value={newPassword}
-            onChange={setNewPassword}
-          />
-          <PasswordInput
-            id="edit-confirm-password"
-            label="Confirm password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleUpdatePassword}
-          disabled={isUpdatingPassword}
-          className="h-[44px] w-fit rounded-full bg-primary px-6 text-white font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isUpdatingPassword ? "Updating…" : "Update password"}
-        </button>
-      </section>
+      </div>
     </div>
   );
 }
-
 ```
 
 ### UI - Article Detail Page (Add Edit Button)

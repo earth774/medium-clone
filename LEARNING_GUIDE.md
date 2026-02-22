@@ -1,10 +1,10 @@
-# 📚 คู่มือการเรียนรู้ Medium Clone — แผน 2 วัน
+# 📚 คู่มือการเรียนรู้ Medium Clone — แผน 4 วัน
 
 คู่มือนี้แบ่งการเรียนรู้ออกเป็นวันๆ พร้อมคำอธิบายแต่ละขั้นตอน และ **code ตัวอย่าง** ในแต่ละ step
 
 **Theme:** ขาวดำ minimal — พื้นหลังขาว, ตัวอักษรดำ, เส้นขอบเทา, ปุ่มใช้ `px-5 py-2.5` ให้สมส่วน
 
-**Database:** SQLite — ไม่ต้อง setup ฐานข้อมูล แค่รัน `npx prisma migrate dev` จะสร้างไฟล์ `dev.db` ให้อัตโนมัติ
+**Database:** PostgreSQL — ใช้ Prisma ORM กับ PostgreSQL (หรือ SQLite สำหรับ development ง่าย)
 
 ---
 
@@ -12,32 +12,35 @@
 
 | ไฟล์ | เนื้อหา |
 |------|---------|
-| [DAY_1.md](DAY_1.md) | วันที่ 1 — Foundation (Setup, Auth, Model, API, Feed) |
-| [DAY_2.md](DAY_2.md) | วันที่ 2 — Features + Deploy (Editor, Article, Profile, Deploy, UI) |
-| [schema.dbml](schema.dbml) | โครงสร้างฐานข้อมูล (DBML — ตาราง status, user, article) |
+| [DAY_1.md](DAY_1.md) | วันที่ 1 — Foundation (Setup, Prisma, Database, API, Feed) |
+| [DAY_2.md](DAY_2.md) | วันที่ 2 — Auth (JWT, Login, Register, Middleware) |
+| [Day_3.md](Day_3.md) | วันที่ 3 — Editor + Profile (Markdown Editor, Write, Categories, Profile) |
+| [Day_4.md](Day_4.md) | วันที่ 4 — Advanced Features (Edit/Delete, Like, Comments, Git) |
+| [schema.dbml](schema.dbml) | โครงสร้างฐานข้อมูล (DBML — ตาราง status, user, article, category, article_like, comment) |
 
 ---
 
 ## 📋 สรุป Scope ทั้งหมด
 
-### ✅ Must Have (ทำได้ใน 2 วัน)
-- สมัครสมาชิก / Login
-- เขียนบทความ (rich text editor เบื้องต้น)
-- แสดงรายการบทความ (feed)
+### ✅ Must Have (ทำได้ใน 4 วัน)
+- สมัครสมาชิก / Login (JWT + bcrypt + jose)
+- เขียนบทความ (Markdown Editor)
+- แสดงรายการบทความ (feed + pagination)
 - หน้าอ่านบทความ
-- Profile ของแต่ละคน
-- แก้ไขโปรไฟล์ + เปลี่ยนรหัสผ่าน (หน้า Settings)
+- Profile ของแต่ละคน (ดูด้วย username หรือ id)
+- แก้ไขโปรไฟล์ + เปลี่ยนรหัสผ่าน
+- Like บทความ
+- Tag / หมวดหมู่ (Categories)
+- Draft / Publish บทความ
+- Soft Delete บทความ
+- Comment system
+- Edit บทความ (HTML → Markdown)
 
 ### ⚡ Nice to Have (ถ้าเวลาเหลือ)
-- Like บทความ
-- Tag / หมวดหมู่
 - Follow คนอื่น
-
-### ❌ ตัดออก (ซับซ้อนเกินไปสำหรับ 2 วัน)
-- Comment system
-- Paywall / Member
-- Notification
 - Search
+- Notification
+- Paywall / Member
 
 ---
 
@@ -45,30 +48,46 @@
 
 | ส่วน | เทคโนโลยี | เหตุผล |
 |------|-----------|--------|
-| Framework | Next.js 14 App Router | Full-stack, SSR, API Routes ในตัว |
-| Database | SQLite + Prisma | ไม่ต้อง setup DB, มี Status (Active/Inactive/Deleted), createdAt, updatedAt |
-| Auth | JWT (jsonwebtoken) | ควบคุมได้เต็มที่, ไม่ต้องพึ่ง library ใหญ่ |
-| Editor | Tiptap | Toolbar เต็ม: Bold, Italic, Strike, Code, H1–H3, Lists, Quote, Code block |
-| Styling | Tailwind CSS | เขียน CSS เร็ว, responsive ง่าย |
-| Deploy | Vercel (Optional) | ใช้ SQLite ไม่ต้อง deploy — รัน local ได้เลย |
+| Framework | Next.js 16+ App Router | Full-stack, SSR, API Routes, Server Components |
+| Database | PostgreSQL + Prisma | Production-ready, type-safe ORM |
+| Auth | JWT (jose + bcryptjs) | Edge-compatible, รองรับ Middleware |
+| Editor | @uiw/react-md-editor + marked | Markdown editor + HTML conversion |
+| Styling | Tailwind CSS | Utility-first, responsive, design tokens |
+| Deploy | Vercel | Serverless deployment, easy CI/CD |
 
 ---
 
 ## 📌 สรุปลำดับการทำ
 
-### [วันที่ 1](DAY_1.md)
-1. Setup Next.js + Prisma + SQLite  
-2. Auth (JWT) — Login / Register  
-3. สร้าง Article model  
-4. API: POST /articles, GET /articles  
-5. หน้า Feed แสดงบทความ  
+### [วันที่ 1 — Foundation](DAY_1.md)
+1. Setup Next.js 16 + Prisma + PostgreSQL
+2. Database schema (DBML + Prisma)
+3. API: GET /api/articles (feed with pagination)
+4. หน้า Feed แสดงบทความ
+5. Header component
 
-### [วันที่ 2](DAY_2.md)
-1. Rich text editor (Tiptap)  
-2. หน้าอ่านบทความ  
-3. หน้า Profile  
-4. Deploy Vercel (Optional)  
-5. Polish UI ด้วย Tailwind  
+### [วันที่ 2 — Authentication](DAY_2.md)
+1. JWT Auth with jose (Edge-compatible)
+2. Register / Login API
+3. Middleware for route protection
+4. Edit Profile + Change Password API
+5. Profile UI with auth state
+
+### [วันที่ 3 — Editor & Content](Day_3.md)
+1. Markdown Editor (@uiw/react-md-editor)
+2. API: POST /api/articles (Create)
+3. API: GET /api/categories
+4. Draft / Publish workflow
+5. Popular Articles & Recommended Topics sidebar
+6. Public Profile page
+
+### [วันที่ 4 — Advanced Features](Day_4.md)
+1. Soft Delete articles
+2. Update Article (HTML → Markdown with turndown)
+3. Edit Article Page
+4. Like Article system
+5. Comment system
+6. Git & GitHub workflow  
 
 ---
 

@@ -90,3 +90,21 @@ Table article_like {
     article_id
   }
 }
+
+// คอมเมนต์ (Comment) สำหรับแต่ละบทความ
+Table comment {
+  id varchar [primary key, not null, note: "รหัสคอมเมนต์ (PK, CUID)"]
+  article_id varchar [not null, ref: > article.id, note: "รหัสบทความ (FK -> article.id, CASCADE on delete)"]
+  user_id varchar [not null, ref: > user.id, note: "รหัสผู้ใช้ผู้คอมเมนต์ (FK -> user.id)"]
+  content text [not null, note: "เนื้อหาคอมเมนต์"]
+  status_id integer [not null, default: 1, ref: > status.id, note: "สถานะ (FK -> status.id)"]
+  created_at timestamp [not null, note: "วันที่สร้างคอมเมนต์"]
+  updated_at timestamp [not null, note: "วันที่แก้ไขล่าสุด"]
+
+  Indexes {
+    article_id
+    user_id
+    parent_id
+    status_id
+  }
+}

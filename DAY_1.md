@@ -10,14 +10,14 @@
 
 ### ทำอะไร
 
-- สร้างโปรเจกต์ Next.js 14 ด้วย App Router
+- สร้างโปรเจกต์ Next.js 16 ด้วย App Router
 - ติดตั้ง Prisma และเชื่อมต่อ PostgreSQL
 - ติดตั้ง Tailwind CSS
 - สร้าง Layout พื้นฐาน (Header, Navigation)
 
 ### อธิบาย
 
-- **Next.js 14 App Router** — โครงสร้างใหม่ใช้โฟลเดอร์ `app/` แทน `pages/` รองรับ Server Components, Layouts, และ API Routes
+- **Next.js 16 App Router** — ใช้โฟลเดอร์ `app/` แทน `pages/` รองรับ Server Components, Layouts, และ API Routes
 - **Prisma** — ORM ที่ช่วยเขียน query แบบ type-safe และจัดการ migration
 - **PostgreSQL** — ฐานข้อมูลที่ต้อง setup server รันได้ทันที เหมาะกับ development
 - **Layout** — ใช้ `app/layout.tsx` เป็น root layout แสดง Header/Nav ซ้ำทุกหน้า
